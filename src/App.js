@@ -4,7 +4,9 @@ import LandingPage from './components/landing_pages/homepage';
 import AuthPages from './components/auth/AuthPages';
 import PasswordResetPages from './components/auth/PasswordResetPages';
 import AdminDashboard from './components/dashboard/admin/admin';
-
+import BeginnerDashboard from "./components/dashboard/beginner/beginner";
+import ProfessionalDashboard from "./components/dashboard/professionnal/professionnal";
+import InstitutionDashboard  from "./components/dashboard/institut/institut";
 import './styles/globals.css';
 
 // Optional: Add protected route wrapper
@@ -25,7 +27,9 @@ export default function App() {
         <Route path="/reset-password" element={<PasswordResetPages stage="reset" />} />
         <Route path="/verify-reset" element={<PasswordResetPages stage="verify" />} />
         <Route path="/admin_dashboard" element={<AdminDashboard stage="admin" />} />
-
+        <Route path="/beginner_dashboard" element={<BeginnerDashboard stage="beginner" />} />
+        <Route path="/professional_dashboard" element={<ProfessionalDashboard stage="professional" />} />
+        <Route path="/institut_dashboard" element={<InstitutionDashboard stage="institut" />} />
 
         {/* Protected routes example */}
         <Route
