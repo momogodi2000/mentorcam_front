@@ -1,11 +1,55 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { login, register } from '../../authService';
 
 const AuthPages = ({ isSignUp = false }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState('amateur');
   const navigate = useNavigate();
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+  });
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    try {
+      if (isSignUp) {
+        const userData = {
+          email: formData.email,
+          password: formData.password,
+          password2: formData.password,
+          user_type: userType,
+          phone_number: formData.phone,
+          username: formData.email,
+          full_name: formData.fullName
+        };
+        const response = await register(userData);
+        navigate(response.redirect_url);
+      } else {
+        const response = await login(formData.email, formData.password);
+        navigate(response.redirect_url);
+      }
+    } catch (error) {
+      setError('Authentication failed. Please check your credentials and try again.');
+      console.error('Authentication error:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
@@ -51,7 +95,13 @@ const AuthPages = ({ isSignUp = false }) => {
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {isSignUp && (
               <>
                 <div className="space-y-4">
@@ -85,8 +135,12 @@ const AuthPages = ({ isSignUp = false }) => {
                       <User className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Enter your full name"
+                        required
                       />
                     </div>
                   </div>
@@ -99,8 +153,12 @@ const AuthPages = ({ isSignUp = false }) => {
                       <Phone className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Enter your phone number"
+                        required
                       />
                     </div>
                   </div>
@@ -116,8 +174,12 @@ const AuthPages = ({ isSignUp = false }) => {
                 <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   placeholder="Enter your email"
+                  required
                 />
               </div>
             </div>
@@ -130,8 +192,12 @@ const AuthPages = ({ isSignUp = false }) => {
                 <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   placeholder="Enter your password"
+                  required
                 />
                 <button
                   type="button"
