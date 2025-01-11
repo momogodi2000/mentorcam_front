@@ -4,7 +4,7 @@
  */
 
 // You might want to move this to an environment config
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 /**
  * Login user with email and password
@@ -43,7 +43,7 @@ export const login = async (email, password) => {
 
     return {
       ...data,
-      redirect_url: redirectMap[data.user_type] || '/dashboard'
+      redirect_url: redirectMap[data.user_type] || '/login'
     };
   } catch (error) {
     console.error('Login error:', error);
@@ -94,7 +94,7 @@ export const register = async (userData) => {
 
     return {
       ...data,
-      redirect_url: redirectMap[userData.user_type] || '/dashboard'
+      redirect_url: redirectMap[userData.user_type] || '/login'
     };
   } catch (error) {
     console.error('Registration error:', error);

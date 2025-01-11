@@ -5,6 +5,7 @@ import { login, register } from '../../authService';
 
 const AuthPages = ({ isSignUp = false }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userType, setUserType] = useState('amateur');
   const navigate = useNavigate();
   
@@ -12,6 +13,7 @@ const AuthPages = ({ isSignUp = false }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phone: '',
   });
@@ -28,12 +30,18 @@ const AuthPages = ({ isSignUp = false }) => {
     e.preventDefault();
     setError('');
     
+    // Password validation for signup
+    if (isSignUp && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
     try {
       if (isSignUp) {
         const userData = {
           email: formData.email,
           password: formData.password,
-          password2: formData.password,
+          password2: formData.confirmPassword,
           user_type: userType,
           phone_number: formData.phone,
           username: formData.email,
@@ -56,6 +64,7 @@ const AuthPages = ({ isSignUp = false }) => {
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         {/* Left Panel - Image/Brand */}
         <div className="md:w-1/2 bg-gradient-to-br from-green-600 to-blue-600 p-12 text-white hidden md:flex flex-col justify-between">
+          {/* Left panel content remains the same */}
           <div className="mb-8">
             <Link to="/" className="text-white hover:text-white/90 transition-all">
               <h2 className="text-4xl font-bold mb-6">
@@ -213,6 +222,37 @@ const AuthPages = ({ isSignUp = false }) => {
               </div>
             </div>
 
+            {isSignUp && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!isSignUp && (
               <div className="flex justify-between items-center">
                 <Link
@@ -237,6 +277,7 @@ const AuthPages = ({ isSignUp = false }) => {
               {isSignUp ? "Create Account" : "Sign In"}
             </button>
 
+            {/* Social login section remains the same */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>

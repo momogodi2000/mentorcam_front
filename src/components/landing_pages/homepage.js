@@ -40,13 +40,13 @@ const LandingPage = () => {
       name: "Jean-Paul Kamdem",
       role: "Artisan en Menuiserie",
       content: "Grâce à MentorCam, j'ai pu développer mes compétences en menuiserie moderne et doubler ma clientèle.",
-      image: "/api/placeholder/60/60"
+      image: "../../assets/images/avarta.webp"
     },
     {
       name: "Marie Nguemo",
       role: "Entrepreneuse Tech",
       content: "La plateforme m'a mise en relation avec des mentors qui m'ont guidée dans le lancement de ma startup.",
-      image: "/api/placeholder/60/60"
+      image: "../assets/images/avarta.webp"
     }
   ];
 
