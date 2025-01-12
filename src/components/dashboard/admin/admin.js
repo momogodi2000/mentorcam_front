@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Globe, Users, BookOpen, Calendar, CreditCard, Bell, BarChart2, Settings, Menu, X, BookOpenCheck, TrendingUp, Wallet, PhoneCall } from 'lucide-react';
+import { Sun, Moon, Globe, Users, BookOpen, Calendar, CreditCard, Bell, BarChart2, Settings, Menu, X, BookOpenCheck, TrendingUp, Wallet, PhoneCall, LogOut } from 'lucide-react';
 import { Card, CardContent } from '../../ui/card';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -80,6 +80,12 @@ const AdminDashboard = () => {
     { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres' }
   ];
 
+    // UPDATE: Added logout handler function
+    const handleLogout = () => {
+      // Add your logout logic here
+      console.log('Logging out...');
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       {/* Sidebar */}
@@ -122,6 +128,16 @@ const AdminDashboard = () => {
             </span>
           </div>
         </div>
+
+         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                                                            <button
+                                                                onClick={handleLogout}
+                                                                className="flex items-center w-full p-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700"
+                                                            >
+                                                                <LogOut className="w-5 h-5 mr-3" />
+                                                                {isEnglish ? 'Logout' : 'Déconnexion'}
+                                                            </button>
+                                                        </div>
       </aside>
 
       {/* Main Content */}
