@@ -7,6 +7,8 @@ import AdminDashboard from './components/dashboard/admin/admin';
 import BeginnerDashboard from "./components/dashboard/beginner/beginner";
 import ProfessionalDashboard from "./components/dashboard/professionnal/professionnal";
 import InstitutionDashboard  from "./components/dashboard/institut/institut";
+import AdminCRUD  from "./components/dashboard/admin/crud_user/crud_user";
+
 import './styles/globals.css';
 
 // Optional: Add protected route wrapper
@@ -30,6 +32,7 @@ export default function App() {
         <Route path="/beginner_dashboard" element={<BeginnerDashboard stage="beginner" />} />
         <Route path="/professional_dashboard" element={<ProfessionalDashboard stage="professional" />} />
         <Route path="/institut_dashboard" element={<InstitutionDashboard stage="institut" />} />
+        <Route path="/crud_user" element={<AdminCRUD />} />
 
         {/* Protected routes example */}
         <Route

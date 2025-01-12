@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Sun, Moon, Globe, Users, BookOpen, Calendar, CreditCard, Bell, BarChart2, Settings, Menu, X, BookOpenCheck, TrendingUp, Wallet, PhoneCall, LogOut } from 'lucide-react';
 import { Card, CardContent } from '../../ui/card';
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { logout } from '../../../authService'; // Import the logout function
+import { useNavigate } from 'react-router-dom'; // Import for navigation
+
 
 const AdminDashboard = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -80,10 +83,16 @@ const AdminDashboard = () => {
     { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres' }
   ];
 
-    // UPDATE: Added logout handler function
-    const handleLogout = () => {
-      // Add your logout logic here
-      console.log('Logging out...');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // After successful logout, redirect to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // You might want to show an error message to the user here
+      // For example, using a toast notification
+    }
   };
 
   return (

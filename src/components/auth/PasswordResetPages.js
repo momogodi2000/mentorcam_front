@@ -1,22 +1,40 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Check, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { requestPasswordReset, verifyResetCode, resetPassword } from '../../authService';
 
 const PasswordResetPages = () => {
-  const [stage, setStage] = useState('forgot'); // forgot, verify, reset, success
+  const [stage, setStage] = useState('forgot');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Password validation state
+  const [isPasswordValid, setIsPasswordValid] = useState({
+    length: false,
+    number: false,
+    mixedCase: false
+  });
+
+  // Password validation function
+  const validatePassword = (password) => {
+    setIsPasswordValid({
+      length: password.length >= 8,
+      number: /\d/.test(password),
+      mixedCase: /[a-z]/.test(password) && /[A-Z]/.test(password)
+    });
+  };
 
   // Handle OTP input
   const handleCodeChange = (index, value) => {
-    if (value.length > 1) return; // Prevent multiple digits
+    if (value.length > 1) return;
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
     
-    // Auto-focus next input
     if (value && index < 5) {
       const nextInput = document.getElementById(`code-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -31,6 +49,89 @@ const PasswordResetPages = () => {
     }
   };
 
+  // Handle password reset request
+  const handleRequestReset = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await requestPasswordReset(email);
+      setStage('verify');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle verification code submission
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await verifyResetCode(email, code);
+      setStage('reset');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle password reset
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Validate password requirements
+    if (!Object.values(isPasswordValid).every(Boolean)) {
+      setError('Please meet all password requirements');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await resetPassword(email, code, newPassword, confirmPassword);
+      setStage('success');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle resend code
+  const handleResendCode = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await requestPasswordReset(email);
+      // Show success message
+      alert('New code has been sent to your email');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Error Alert Component
+  const ErrorAlert = ({ message }) => message ? (
+    <div className="flex items-center p-4 bg-red-50 rounded-lg text-red-600">
+      <AlertCircle className="w-5 h-5 mr-2" />
+      {message}
+    </div>
+  ) : null;
+
   const renderForgotPassword = () => (
     <div className="space-y-6">
       <div className="text-center">
@@ -40,10 +141,9 @@ const PasswordResetPages = () => {
         </p>
       </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        setStage('verify');
-      }} className="space-y-6">
+      <ErrorAlert message={error} />
+
+      <form onSubmit={handleRequestReset} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email Address
@@ -57,15 +157,17 @@ const PasswordResetPages = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Enter your email"
               required
+              disabled={loading}
             />
           </div>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300 disabled:opacity-50"
+          disabled={loading}
         >
-          Send Reset Code
+          {loading ? 'Sending...' : 'Send Reset Code'}
         </button>
       </form>
     </div>
@@ -80,10 +182,9 @@ const PasswordResetPages = () => {
         </p>
       </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        setStage('reset');
-      }} className="space-y-6">
+      <ErrorAlert message={error} />
+
+      <form onSubmit={handleVerifyCode} className="space-y-6">
         <div className="flex justify-center space-x-3">
           {code.map((digit, index) => (
             <input
@@ -96,22 +197,28 @@ const PasswordResetPages = () => {
               onKeyDown={(e) => handleKeyDown(index, e)}
               className="w-12 h-12 text-center text-xl font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               required
+              disabled={loading}
             />
           ))}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300 disabled:opacity-50"
+          disabled={loading || code.some(digit => !digit)}
         >
-          Verify Code
+          {loading ? 'Verifying...' : 'Verify Code'}
         </button>
       </form>
 
       <div className="text-center">
         <p className="text-sm text-gray-600">
           Didn't receive the code?{' '}
-          <button className="text-blue-600 hover:text-blue-700 font-medium">
+          <button 
+            onClick={handleResendCode}
+            className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+            disabled={loading}
+          >
             Resend Code
           </button>
         </p>
@@ -128,10 +235,9 @@ const PasswordResetPages = () => {
         </p>
       </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        setStage('success');
-      }} className="space-y-6">
+      <ErrorAlert message={error} />
+
+      <form onSubmit={handleResetPassword} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             New Password
@@ -141,11 +247,25 @@ const PasswordResetPages = () => {
             <input
               type={showPassword ? "text" : "password"}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                validatePassword(e.target.value);
+              }}
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Enter new password"
               required
+              disabled={loading}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              {showPassword ? 
+                <EyeOff className="w-5 h-5 text-gray-400" /> : 
+                <Eye className="w-5 h-5 text-gray-400" />
+              }
+            </button>
           </div>
         </div>
 
@@ -159,33 +279,35 @@ const PasswordResetPages = () => {
               type={showPassword ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Confirm new password"
               required
+              disabled={loading}
             />
           </div>
         </div>
 
         <div className="space-y-2">
           <p className="text-sm text-gray-600 flex items-center">
-            <Check className="w-4 h-4 text-green-500 mr-2" />
+            <Check className={`w-4 h-4 mr-2 ${isPasswordValid.length ? 'text-green-500' : 'text-gray-300'}`} />
             At least 8 characters long
           </p>
           <p className="text-sm text-gray-600 flex items-center">
-            <Check className="w-4 h-4 text-green-500 mr-2" />
+            <Check className={`w-4 h-4 mr-2 ${isPasswordValid.number ? 'text-green-500' : 'text-gray-300'}`} />
             Contains at least one number
           </p>
           <p className="text-sm text-gray-600 flex items-center">
-            <Check className="w-4 h-4 text-green-500 mr-2" />
+            <Check className={`w-4 h-4 mr-2 ${isPasswordValid.mixedCase ? 'text-green-500' : 'text-gray-300'}`} />
             Contains both uppercase and lowercase letters
           </p>
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300 disabled:opacity-50"
+          disabled={loading || !Object.values(isPasswordValid).every(Boolean) || !confirmPassword}
         >
-          Reset Password
+          {loading ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>
     </div>
@@ -220,6 +342,7 @@ const PasswordResetPages = () => {
           <button
             onClick={() => setStage(stage === 'verify' ? 'forgot' : stage === 'reset' ? 'verify' : 'forgot')}
             className="flex items-center text-gray-600 hover:text-gray-800 mb-6 transition-colors"
+            disabled={loading}
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
