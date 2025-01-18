@@ -207,7 +207,11 @@ const LandingPage = () => {
                 </div>
               </div>
             </div>
-            <button className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all flex items-center">
+            <button 
+                              onClick={() => navigate('/about_us')}
+
+            
+            className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all flex items-center">
               En savoir plus
               <ArrowRight className="ml-2 w-5 h-5" />
             </button>
@@ -424,7 +428,10 @@ const LandingPage = () => {
                   <button className="px-8 py-4 bg-white text-blue-600 rounded-full font-medium hover:bg-blue-50 transform hover:scale-105 transition-all">
                     Commencer gratuitement
                   </button>
-                  <button className="px-8 py-4 border-2 border-white text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all">
+                  <button 
+                                    onClick={() => navigate('/contact_us')}
+
+                  className="px-8 py-4 border-2 border-white text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all">
                     Contacter l'équipe
                   </button>
                 </div>

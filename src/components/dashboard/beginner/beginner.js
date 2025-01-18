@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Globe, Users, BookOpen, Calendar, Search, Bell, Menu, X, BookOpenCheck, MessageSquare, Star, Award, User, Clock, Heart, MapPin, LogOut } from 'lucide-react';
+import { Sun, Moon, Globe, Users, Home, BookOpen, Calendar, Search, Bell, Menu, X, BookOpenCheck, MessageSquare, Star, Award, User, Clock, Heart, MapPin, LogOut } from 'lucide-react';
 import { Card, CardContent } from '../../ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+
 
 const BeginnerDashboard = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isEnglish, setIsEnglish] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const navigate = useNavigate();
 
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
         document.documentElement.classList.toggle('dark');
     };
 
+    
     // Données des sessions de mentorat
     const learningProgress = [
         { month: 'Jan', hours: 8, skills: 2 },
@@ -85,12 +89,13 @@ const BeginnerDashboard = () => {
     ];
 
     const menuItems = [
-        { icon: BookOpen, label: isEnglish ? 'Learning Path' : 'Parcours d\'apprentissage' },
-        { icon: Users, label: isEnglish ? 'Find Mentors' : 'Trouver des Mentors' },
-        { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions' },
-        { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages' },
-        { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations' },
-        { icon: User, label: isEnglish ? 'Profile' : 'Profil' }
+        { icon: Home, label: isEnglish ? 'Dashboard' : 'Tableau de bord', path: '/beginner_dashboard' },
+        { icon: BookOpen, label: isEnglish ? 'Learning Path' : 'Parcours d\'apprentissage', path: '/learning' },
+        { icon: Users, label: isEnglish ? 'Find Mentors' : 'Trouver des Mentors', path: '/mentors' },
+        { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '/sessions' },
+        { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/' },
+        { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/' },
+        { icon: User, label: isEnglish ? 'Profile' : 'Profil', path: '/profile' }
     ];
 
      // UPDATE: Added logout handler function
@@ -134,8 +139,9 @@ const BeginnerDashboard = () => {
                         {menuItems.map((item, index) => (
                             <button
                                 key={index}
+                                onClick={() => navigate(item.path)}
                                 className={`flex items-center w-full p-3 rounded-lg transition-colors ${
-                                    index === 0
+                                    window.location.pathname === item.path
                                         ? 'bg-blue-600 text-white'
                                         : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`
                                 }`}

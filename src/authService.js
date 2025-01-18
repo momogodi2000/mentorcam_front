@@ -106,37 +106,53 @@ export const register = async (userData) => {
  * Logout user and invalidate all sessions
  * @returns {Promise} Response indicating logout success
  */
+export const clearAuthData = () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  // Add any other auth-related items you need to clear
+};
+
 export const logout = async () => {
   try {
     const refreshToken = localStorage.getItem('refreshToken');
     const authToken = localStorage.getItem('authToken');
 
-    if (!refreshToken) {
-      throw new Error('Refresh token not found');
+    if (!refreshToken || !authToken) {
+      // If tokens don't exist, just clear the data and consider it a successful logout
+      clearAuthData();
+      return { success: true, message: 'Logged out successfully' };
     }
 
-    const response = await fetch(`${API_BASE_URL}/logout/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/logout/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Logout failed');
+      // Even if the server request fails, we should still clear local data
+      if (!response.ok) {
+        console.warn('Server-side logout failed, but proceeding with local logout');
+      }
+    } catch (error) {
+      // If server is unreachable or other network errors occur,
+      // log the error but proceed with local logout
+      console.warn('Network error during logout:', error);
     }
 
-    // Clear all auth-related data from localStorage
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-
-    return await response.json();
+    // Always clear local auth data, regardless of server response
+    clearAuthData();
+    
+    return { success: true, message: 'Logged out successfully' };
   } catch (error) {
     console.error('Logout error:', error);
-    throw error;
+    // Still clear local data even if an error occurs
+    clearAuthData();
+    throw new Error('Logout failed: ' + (error.message || 'Unknown error'));
   }
 };
 
@@ -225,6 +241,55 @@ export const resetPassword = async (email, code, newPassword, confirmPassword) =
     return await response.json();
   } catch (error) {
     console.error('Reset password error:', error);
+    throw error;
+  }
+};
+
+export const submitContactForm = async (formData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contact/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Contact submission failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Contact submission error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Subscribe to newsletter
+ * @param {string} email Subscriber's email address
+ * @returns {Promise} Response indicating subscription success
+ */
+export const subscribeNewsletter = async (email) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/newsletter/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Newsletter subscription failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Newsletter subscription error:', error);
     throw error;
   }
 };
