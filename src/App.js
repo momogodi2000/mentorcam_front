@@ -17,6 +17,10 @@ import LearningPathPage from './components/dashboard/beginner/learning/learning_
 import FindMentors from './components/dashboard/beginner/find_mentor/mentors';
 import SessionsPage from './components/dashboard/beginner/session/new';
 import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
+import AchievementsPage from './components/dashboard/beginner/achievement/gold';
+import ProfilePage from './components/dashboard/beginner/profile/profile_new';
+
+
 
 
 
@@ -70,6 +74,10 @@ export default function App() {
         <Route path="/mentors" element={<FindMentors />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/chat" element={<InstantMessages />} />
+        <Route path="/achievements" element={<AchievementsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+
+
 
 
 

@@ -94,7 +94,7 @@ const BeginnerDashboard = () => {
         { icon: Users, label: isEnglish ? 'Find Mentors' : 'Trouver des Mentors', path: '/mentors' },
         { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '/sessions' },
         { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/chat' },
-        { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/' },
+        { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/achievements' },
         { icon: User, label: isEnglish ? 'Profile' : 'Profil', path: '/profile' }
     ];
 
