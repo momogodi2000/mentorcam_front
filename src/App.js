@@ -16,6 +16,8 @@ import UserFormPage from './components/dashboard/admin/user-management/UserFormP
 import LearningPathPage from './components/dashboard/beginner/learning/learning_path';
 import FindMentors from './components/dashboard/beginner/find_mentor/mentors';
 import SessionsPage from './components/dashboard/beginner/session/new';
+import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
+
 
 
 
@@ -67,6 +69,8 @@ export default function App() {
         <Route path="/learning" element={<LearningPathPage />} />
         <Route path="/mentors" element={<FindMentors />} />
         <Route path="/sessions" element={<SessionsPage />} />
+        <Route path="/chat" element={<InstantMessages />} />
+
 
 
 

@@ -98,10 +98,16 @@ const LandingPage = () => {
             <a href="#about" className="block px-3 py-2 text-gray-600 hover:bg-blue-50 rounded-lg">À Propos</a>
             <a href="#testimonials" className="block px-3 py-2 text-gray-600 hover:bg-blue-50 rounded-lg">Témoignages</a>
             <div className="space-y-2 pt-2">
-              <button className="w-full px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
+              <button
+                                onClick={() => navigate('/login')}
+
+              className="w-full px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
                 Connexion
               </button>
-              <button className="w-full px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              <button 
+                                onClick={() => navigate('/signup')}
+
+              className="w-full px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700">
                 S'inscrire
               </button>
             </div>
