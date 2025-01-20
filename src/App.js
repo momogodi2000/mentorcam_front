@@ -20,13 +20,10 @@ import InstantMessages from './components/dashboard/beginner/messages/amateur_ch
 import AchievementsPage from './components/dashboard/beginner/achievement/gold';
 import ProfilePage from './components/dashboard/beginner/profile/profile_new';
 
+import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
 
 
-
-
-
-
-
+import BeginnerLayout from './components/dashboard/beginner/biginner_layout';
 import './styles/globals.css';
 
 // Optional: Add protected route wrapper
@@ -43,6 +40,8 @@ const AdminDashboardWithLayout = () => {
     </AdminLayout>
   );
 };
+
+
 
 export default function App() {
   return (
@@ -62,7 +61,7 @@ export default function App() {
         {/* Nested admin routes */}
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboard />} />
-\
+
         <Route path="/admin/users" element={<UserListPage />} />
         <Route path="/admin/users/:id" element={<UserFormPage />} />
         </Route>
@@ -77,16 +76,14 @@ export default function App() {
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
+        {/* professional route dashbaord */}
+        <Route path="/professional_dashboard" element={<ProfessionalDashboard stage="professional" />} />
 
-
-
-
+        <Route path="/complete" element={<CompleteProfile />} />
 
 
 
         {/* Other dashboard routes */}
-
-        <Route path="/professional_dashboard" element={<ProfessionalDashboard stage="professional" />} />
         <Route path="/institut_dashboard" element={<InstitutionDashboard stage="institut" />} />
         
         {/* Other routes */}
@@ -96,6 +93,16 @@ export default function App() {
         {/* Protected routes example */}
         <Route
           path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <div>Dashboard Page</div>
+            </ProtectedRoute>
+          }
+        />
+
+         {/* Protected routes example */}
+         <Route
+          path="/beginner_dashboard"
           element={
             <ProtectedRoute>
               <div>Dashboard Page</div>

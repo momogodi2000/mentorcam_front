@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
 import { Sun, Moon, Globe, Users, Home, BookOpen, Calendar, Search, Bell, Menu, X, BookOpenCheck, MessageSquare, Star, Award, User, Clock, Heart, MapPin, LogOut } from 'lucide-react';
 import { Card, CardContent } from '../../ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { logout } from '../../../authService';
+
 
 
 const BeginnerDashboard = () => {
@@ -10,6 +12,29 @@ const BeginnerDashboard = () => {
     const [isEnglish, setIsEnglish] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await fetch('/api/current-user/', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Assuming you store the token in localStorage
+                    },
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    setCurrentUser(userData);
+                } else {
+                    console.error('Failed to fetch user data');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+
+        fetchCurrentUser();
+    }, []);
 
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
@@ -98,10 +123,27 @@ const BeginnerDashboard = () => {
         { icon: User, label: isEnglish ? 'Profile' : 'Profil', path: '/profile' }
     ];
 
-     // UPDATE: Added logout handler function
-     const handleLogout = () => {
-        // Add your logout logic here
-        console.log('Logging out...');
+
+        // In your component:
+        const handleLogout = async () => {
+        try {
+            await logout();
+            // Redirect to login page or home
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // Handle error appropriately
+        }
+        };
+
+     // Get user initials for avatar
+     const getUserInitials = () => {
+        if (!currentUser) return 'U';
+        const names = currentUser.name ? currentUser.name.split(' ') : [];
+        if (names.length >= 2) {
+            return `${names[0][0]}${names[1][0]}`.toUpperCase();
+        }
+        return currentUser.name ? currentUser.name[0].toUpperCase() : 'U';
     };
 
     return (
@@ -122,16 +164,16 @@ const BeginnerDashboard = () => {
                     </button>
                 </div>
 
-                <div className="p-4">
+               <div className="p-4">
                     <div className="flex items-center space-x-3 mb-6">
                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                            <span className="text-white font-bold">JD</span>
+                            <span className="text-white font-bold">{getUserInitials()}</span>
                         </div>
                         <div>
                             <h3 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Jean Dubois
+                                {currentUser?.name || 'Loading...'}
                             </h3>
-                            <p className="text-sm text-gray-500">Développeur Junior</p>
+                            <p className="text-sm text-gray-500">{currentUser?.email || 'Loading...'}</p>
                         </div>
                     </div>
 

@@ -106,6 +106,40 @@ export const register = async (userData) => {
  * Logout user and invalidate all sessions
  * @returns {Promise} Response indicating logout success
  */
+
+export const logout = async () => {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    const authToken = localStorage.getItem('authToken');
+    
+    if (!authToken) {
+      // Just clear local data if no token exists
+      clearAuthData();
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/logout/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        refresh_token: refreshToken || ''  // Send empty string if no refresh token
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Logout failed:', await response.text());
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Always clear local data
+    clearAuthData();
+  }
+};
+
 export const clearAuthData = () => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('refreshToken');
@@ -113,48 +147,6 @@ export const clearAuthData = () => {
   // Add any other auth-related items you need to clear
 };
 
-export const logout = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    const authToken = localStorage.getItem('authToken');
-
-    if (!refreshToken || !authToken) {
-      // If tokens don't exist, just clear the data and consider it a successful logout
-      clearAuthData();
-      return { success: true, message: 'Logged out successfully' };
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/logout/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      // Even if the server request fails, we should still clear local data
-      if (!response.ok) {
-        console.warn('Server-side logout failed, but proceeding with local logout');
-      }
-    } catch (error) {
-      // If server is unreachable or other network errors occur,
-      // log the error but proceed with local logout
-      console.warn('Network error during logout:', error);
-    }
-
-    // Always clear local auth data, regardless of server response
-    clearAuthData();
-    
-    return { success: true, message: 'Logged out successfully' };
-  } catch (error) {
-    console.error('Logout error:', error);
-    // Still clear local data even if an error occurs
-    clearAuthData();
-    throw new Error('Logout failed: ' + (error.message || 'Unknown error'));
-  }
-};
 
 /**
  * Check if user is authenticated
