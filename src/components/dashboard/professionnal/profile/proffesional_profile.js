@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   User, Mail, Phone, MapPin, Book, Languages as LanguagesIcon, 
-  Award, Clock, Calendar, CreditCard, Plus, X, Camera
+  Award, Clock, Calendar, CreditCard, Plus, X, Camera,
+  Briefcase, ChevronDown, ChevronUp, GraduationCap, Link
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Input } from '../../../ui/input';
@@ -9,94 +10,178 @@ import { Button } from '../../../ui/button';
 import { Textarea } from '../../../ui/textarea';
 import { Badge } from '../../../ui/badge';
 import { Alert, AlertDescription } from '../../../ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../ui/select";
 import ProfessionalLayout from '../professionnal_layout';
+
+
+// Define all available domains and subdomains
+const DOMAINS = {
+  "Software Development": ["Web Development", "Mobile App Development", "Game Development", "DevOps & CI/CD", "Software Testing & QA"],
+  "Data Science & Machine Learning": ["Data Analytics", "Machine Learning", "Deep Learning", "Data Visualization", "Natural Language Processing"],
+  "Cybersecurity": ["Network Security", "Ethical Hacking", "Cloud Security", "Cryptography", "Incident Response"],
+  "Cloud Computing": ["AWS Services", "Google Cloud Platform", "Microsoft Azure", "Cloud Architecture", "Kubernetes & Docker"],
+  "UI/UX Design": ["User Research", "Wireframing & Prototyping", "Interaction Design", "Visual Design", "Usability Testing"],
+  "Digital Marketing": ["SEO Optimization", "Content Marketing", "Social Media Strategy", "Email Marketing", "Affiliate Marketing"],
+  "Business and Entrepreneurship": ["Business Strategy", "Market Analysis", "Funding & Investments", "Startup Growth Hacking", "Leadership & Team Building"],
+  "Artificial Intelligence": ["AI Strategy & Implementation", "Robotics Process Automation", "AI Ethics & Policies", "AI for Business Optimization", "Computer Vision"],
+  "Education & Training": ["Curriculum Development", "Online Course Creation", "E-learning Platforms", "Public Speaking", "Academic Research Guidance"]
+};
 
 const CompleteProfile = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [imagePreview, setImagePreview] = useState(null);
-  const [skills, setSkills] = useState([]);
-  const [newSkill, setNewSkill] = useState('');
-  const [languages, setLanguages] = useState([]);
-  const [newLanguage, setNewLanguage] = useState('');
+  const [expandedDomain, setExpandedDomain] = useState(null);
 
+  // Form state
   const [formData, setFormData] = useState({
+    // Basic Info
     fullName: '',
     email: '',
     phone: '',
     location: '',
+    profilePicture: null,
+    socialLinks: {
+      linkedin: '',
+      github: '',
+      twitter: '',
+      website: ''
+    },
+
+    // Professional Info
     title: '',
-    specialization: '',
     biography: '',
-    experience: '',
-    education: '',
-    certifications: [],
+    hourlyRate: '',
+    domains: [], // Array of {name: string, subdomains: string[]}
+    skills: [],
+    languages: [],
     availability: {
       weekdays: [],
       weekends: false,
       hoursPerWeek: '',
+      timezone: ''
     },
+
+    // Education & Experience
+    education: {
+      degrees: [], // Array of {degree: string, institution: string, year: string}
+      certifications: [] // Array of {name: string, issuer: string, year: string}
+    },
+    experience: {
+      years: '',
+      currentRole: '',
+      previousRoles: [] // Array of {title: string, company: string, duration: string}
+    },
+
+    // Portfolio
+    portfolio: {
+      projects: [], // Array of {name: string, description: string, link: string}
+      publications: [], // Array of {title: string, link: string}
+      achievements: [] // Array of strings
+    },
+
+    // Mentorship Plans
     mentorship: {
       monthly: {
         price: '',
         description: '',
-        features: []
+        features: [],
+        maxStudents: ''
       },
       trimester: {
         price: '',
         description: '',
-        features: []
+        features: [],
+        maxStudents: ''
       },
       yearly: {
         price: '',
         description: '',
-        features: []
+        features: [],
+        maxStudents: ''
       }
     }
   });
 
+  // Handlers
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
+        setFormData(prev => ({...prev, profilePicture: file}));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const addSkill = () => {
-    if (newSkill && !skills.includes(newSkill)) {
-      setSkills([...skills, newSkill]);
-      setNewSkill('');
-    }
+  const handleDomainSelection = (domain, subdomain) => {
+    setFormData(prev => {
+      const newDomains = [...prev.domains];
+      const domainIndex = newDomains.findIndex(d => d.name === domain);
+      
+      if (domainIndex === -1) {
+        newDomains.push({
+          name: domain,
+          subdomains: [subdomain]
+        });
+      } else {
+        const subdomains = newDomains[domainIndex].subdomains;
+        if (subdomains.includes(subdomain)) {
+          newDomains[domainIndex].subdomains = subdomains.filter(s => s !== subdomain);
+          if (newDomains[domainIndex].subdomains.length === 0) {
+            newDomains.splice(domainIndex, 1);
+          }
+        } else {
+          newDomains[domainIndex].subdomains.push(subdomain);
+        }
+      }
+      
+      return {
+        ...prev,
+        domains: newDomains
+      };
+    });
   };
 
-  const removeSkill = (skillToRemove) => {
-    setSkills(skills.filter(skill => skill !== skillToRemove));
+  const addEducation = (type, data) => {
+    setFormData(prev => ({
+      ...prev,
+      education: {
+        ...prev.education,
+        [type]: [...prev.education[type], data]
+      }
+    }));
   };
 
-  const addLanguage = () => {
-    if (newLanguage && !languages.includes(newLanguage)) {
-      setLanguages([...languages, newLanguage]);
-      setNewLanguage('');
-    }
-  };
-
-  const removeLanguage = (languageToRemove) => {
-    setLanguages(languages.filter(language => language !== languageToRemove));
+  const addPortfolioItem = (type, data) => {
+    setFormData(prev => ({
+      ...prev,
+      portfolio: {
+        ...prev.portfolio,
+        [type]: [...prev.portfolio[type], data]
+      }
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', { ...formData, skills, languages });
+    console.log('Form submitted:', formData);
+    // Handle form submission logic here
   };
 
+  // Render functions for each step
   const renderStep1 = () => (
     <div className="space-y-6 animate-fadeIn">
+      {/* Profile Picture */}
       <div className="text-center mb-8">
         <div className="relative w-32 h-32 mx-auto mb-4">
           <div className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -115,6 +200,7 @@ const CompleteProfile = () => {
         </div>
       </div>
 
+      {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="text-sm font-medium">{isEnglish ? 'Full Name' : 'Nom Complet'}</label>
@@ -165,209 +251,413 @@ const CompleteProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Social Links */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">{isEnglish ? 'Social Links' : 'Liens Sociaux'}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(formData.socialLinks).map(([platform, value]) => (
+            <div key={platform} className="space-y-2">
+              <label className="text-sm font-medium capitalize">{platform}</label>
+              <div className="relative">
+                <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input 
+                  className="pl-10"
+                  value={value}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    socialLinks: {
+                      ...formData.socialLinks,
+                      [platform]: e.target.value
+                    }
+                  })}
+                  placeholder={`${platform} URL`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
   const renderStep2 = () => (
     <div className="space-y-6 animate-fadeIn">
-      <div className="space-y-2">
-        <label className="text-sm font-medium">{isEnglish ? 'Professional Title' : 'Titre Professionnel'}</label>
-        <Input 
-          value={formData.title}
-          onChange={(e) => setFormData({...formData, title: e.target.value})}
-          placeholder={isEnglish ? 'e.g. Senior Software Engineer' : 'ex. Ingénieur Logiciel Senior'}
-        />
+      {/* Professional Title & Rate */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            {isEnglish ? 'Professional Title' : 'Titre Professionnel'}
+          </label>
+          <Input 
+            value={formData.title}
+            onChange={(e) => setFormData({...formData, title: e.target.value})}
+            placeholder={isEnglish ? 'e.g. Senior Software Engineer' : 'ex. Ingénieur Logiciel Senior'}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            {isEnglish ? 'Hourly Rate (FCFA)' : 'Taux Horaire (FCFA)'}
+          </label>
+          <Input 
+            type="number"
+            value={formData.hourlyRate}
+            onChange={(e) => setFormData({...formData, hourlyRate: e.target.value})}
+            placeholder="0"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">{isEnglish ? 'Skills' : 'Compétences'}</label>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {skills.map((skill, index) => (
-            <Badge key={index} variant="secondary" className="px-3 py-1">
-              {skill}
-              <button onClick={() => removeSkill(skill)} className="ml-2">
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
+      {/* Domains of Expertise */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          {isEnglish ? 'Domains of Expertise' : 'Domaines d\'expertise'}
+        </h3>
+        <div className="space-y-4">
+          {Object.entries(DOMAINS).map(([domain, subdomains]) => (
+            <Card key={domain}>
+              <CardHeader 
+                className="cursor-pointer" 
+                onClick={() => setExpandedDomain(expandedDomain === domain ? null : domain)}
+              >
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base">{domain}</CardTitle>
+                  {expandedDomain === domain ? 
+                    <ChevronUp className="w-4 h-4" /> : 
+                    <ChevronDown className="w-4 h-4" />
+                  }
+                </div>
+              </CardHeader>
+              {expandedDomain === domain && (
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-2">
+                    {subdomains.map(subdomain => {
+                      const isSelected = formData.domains.some(
+                        d => d.name === domain && d.subdomains.includes(subdomain)
+                      );
+                      return (
+                        <div key={subdomain} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleDomainSelection(domain, subdomain)}
+                            id={`${domain}-${subdomain}`}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`${domain}-${subdomain}`} className="text-sm">
+                            {subdomain}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              )}
+            </Card>
           ))}
         </div>
-        <div className="flex gap-2">
-          <Input 
-            value={newSkill}
-            onChange={(e) => setNewSkill(e.target.value)}
-            placeholder={isEnglish ? 'Add a skill' : 'Ajouter une compétence'}
-            onKeyPress={(e) => e.key === 'Enter' && addSkill()}
-          />
-          <Button onClick={addSkill} size="icon">
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
 
+      {/* Professional Biography */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">{isEnglish ? 'Languages' : 'Langues'}</label>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {languages.map((language, index) => (
-            <Badge key={index} variant="secondary" className="px-3 py-1">
-              {language}
-              <button onClick={() => removeLanguage(language)} className="ml-2">
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input 
-            value={newLanguage}
-            onChange={(e) => setNewLanguage(e.target.value)}
-            placeholder={isEnglish ? 'Add a language' : 'Ajouter une langue'}
-            onKeyPress={(e) => e.key === 'Enter' && addLanguage()}
-          />
-          <Button onClick={addLanguage} size="icon">
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium">{isEnglish ? 'Professional Biography' : 'Biographie Professionnelle'}</label>
+        <label className="text-sm font-medium">
+          {isEnglish ? 'Professional Biography' : 'Biographie Professionnelle'}
+        </label>
         <Textarea 
           value={formData.biography}
           onChange={(e) => setFormData({...formData, biography: e.target.value})}
           rows={4}
+          placeholder={isEnglish ? 
+            "Share your professional journey, expertise, and what makes you a great mentor..." : 
+            "Partagez votre parcours professionnel, votre expertise et ce qui fait de vous un excellent mentor..."
+          }
         />
+      </div>
+
+      {/* Education & Certifications */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">
+        {isEnglish ? 'Education & Certifications' : 'Formation et Certifications'}
+        </h3>
+        <div className="space-y-4">
+          {/* Degrees */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {isEnglish ? 'Academic Degrees' : 'Diplômes Académiques'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {formData.education.degrees.map((degree, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{degree.degree}</p>
+                      <p className="text-sm text-gray-600">{degree.institution} - {degree.year}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          education: {
+                            ...prev.education,
+                            degrees: prev.education.degrees.filter((_, i) => i !== index)
+                          }
+                        }));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="grid grid-cols-3 gap-2">
+                  <Input 
+                    placeholder={isEnglish ? "Degree" : "Diplôme"}
+                    id="new-degree"
+                  />
+                  <Input 
+                    placeholder={isEnglish ? "Institution" : "Institution"}
+                    id="new-institution"
+                  />
+                  <Input 
+                    placeholder={isEnglish ? "Year" : "Année"}
+                    id="new-year"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    const degree = document.getElementById('new-degree').value;
+                    const institution = document.getElementById('new-institution').value;
+                    const year = document.getElementById('new-year').value;
+                    if (degree && institution && year) {
+                      addEducation('degrees', { degree, institution, year });
+                      document.getElementById('new-degree').value = '';
+                      document.getElementById('new-institution').value = '';
+                      document.getElementById('new-year').value = '';
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {isEnglish ? 'Add Degree' : 'Ajouter un Diplôme'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Certifications */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {isEnglish ? 'Professional Certifications' : 'Certifications Professionnelles'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {formData.education.certifications.map((cert, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{cert.name}</p>
+                      <p className="text-sm text-gray-600">{cert.issuer} - {cert.year}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          education: {
+                            ...prev.education,
+                            certifications: prev.education.certifications.filter((_, i) => i !== index)
+                          }
+                        }));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="grid grid-cols-3 gap-2">
+                  <Input 
+                    placeholder={isEnglish ? "Certification Name" : "Nom de la Certification"}
+                    id="new-cert-name"
+                  />
+                  <Input 
+                    placeholder={isEnglish ? "Issuer" : "Émetteur"}
+                    id="new-cert-issuer"
+                  />
+                  <Input 
+                    placeholder={isEnglish ? "Year" : "Année"}
+                    id="new-cert-year"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    const name = document.getElementById('new-cert-name').value;
+                    const issuer = document.getElementById('new-cert-issuer').value;
+                    const year = document.getElementById('new-cert-year').value;
+                    if (name && issuer && year) {
+                      addEducation('certifications', { name, issuer, year });
+                      document.getElementById('new-cert-name').value = '';
+                      document.getElementById('new-cert-issuer').value = '';
+                      document.getElementById('new-cert-year').value = '';
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {isEnglish ? 'Add Certification' : 'Ajouter une Certification'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
 
   const renderStep3 = () => (
     <div className="space-y-8 animate-fadeIn">
+      {/* Mentorship Plans */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{isEnglish ? 'Monthly Plan' : 'Plan Mensuel'}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Price (FCFA)' : 'Prix (FCFA)'}</label>
-              <Input 
-                type="number"
-                value={formData.mentorship.monthly.price}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    monthly: {
-                      ...formData.mentorship.monthly,
-                      price: e.target.value
+        {['monthly', 'trimester', 'yearly'].map((plan) => (
+          <Card key={plan}>
+            <CardHeader>
+              <CardTitle>
+                {isEnglish 
+                  ? plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan'
+                  : 'Plan ' + (plan === 'monthly' ? 'Mensuel' : plan === 'trimester' ? 'Trimestriel' : 'Annuel')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{isEnglish ? 'Price (FCFA)' : 'Prix (FCFA)'}</label>
+                <Input 
+                  type="number"
+                  value={formData.mentorship[plan].price}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    mentorship: {
+                      ...formData.mentorship,
+                      [plan]: {
+                        ...formData.mentorship[plan],
+                        price: e.target.value
+                      }
                     }
-                  }
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Description' : 'Description'}</label>
-              <Textarea 
-                value={formData.mentorship.monthly.description}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    monthly: {
-                      ...formData.mentorship.monthly,
-                      description: e.target.value
-                    }
-                  }
-                })}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                  })}
+                />
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{isEnglish ? 'Trimester Plan' : 'Plan Trimestriel'}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Price (FCFA)' : 'Prix (FCFA)'}</label>
-              <Input 
-                type="number"
-                value={formData.mentorship.trimester.price}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    trimester: {
-                      ...formData.mentorship.trimester,
-                      price: e.target.value
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{isEnglish ? 'Description' : 'Description'}</label>
+                <Textarea 
+                  value={formData.mentorship[plan].description}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    mentorship: {
+                      ...formData.mentorship,
+                      [plan]: {
+                        ...formData.mentorship[plan],
+                        description: e.target.value
+                      }
                     }
-                  }
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Description' : 'Description'}</label>
-              <Textarea 
-                value={formData.mentorship.trimester.description}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    trimester: {
-                      ...formData.mentorship.trimester,
-                      description: e.target.value
-                    }
-                  }
-                })}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                  })}
+                  rows={3}
+                />
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{isEnglish ? 'Yearly Plan' : 'Plan Annuel'}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Price (FCFA)' : 'Prix (FCFA)'}</label>
-              <Input 
-                type="number"
-                value={formData.mentorship.yearly.price}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    yearly: {
-                      ...formData.mentorship.yearly,
-                      price: e.target.value
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {isEnglish ? 'Maximum Students' : 'Nombre Maximum d\'Étudiants'}
+                </label>
+                <Input 
+                  type="number"
+                  value={formData.mentorship[plan].maxStudents}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    mentorship: {
+                      ...formData.mentorship,
+                      [plan]: {
+                        ...formData.mentorship[plan],
+                        maxStudents: e.target.value
+                      }
                     }
-                  }
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Description' : 'Description'}</label>
-              <Textarea 
-                value={formData.mentorship.yearly.description}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  mentorship: {
-                    ...formData.mentorship,
-                    yearly: {
-                      ...formData.mentorship.yearly,
-                      description: e.target.value
-                    }
-                  }
-                })}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                  })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{isEnglish ? 'Features' : 'Caractéristiques'}</label>
+                <div className="space-y-2">
+                  {formData.mentorship[plan].features.map((feature, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input 
+                        value={feature}
+                        onChange={(e) => {
+                          const newFeatures = [...formData.mentorship[plan].features];
+                          newFeatures[index] = e.target.value;
+                          setFormData({
+                            ...formData,
+                            mentorship: {
+                              ...formData.mentorship,
+                              [plan]: {
+                                ...formData.mentorship[plan],
+                                features: newFeatures
+                              }
+                            }
+                          });
+                        }}
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          const newFeatures = formData.mentorship[plan].features.filter((_, i) => i !== index);
+                          setFormData({
+                            ...formData,
+                            mentorship: {
+                              ...formData.mentorship,
+                              [plan]: {
+                                ...formData.mentorship[plan],
+                                features: newFeatures
+                              }
+                            }
+                          });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        mentorship: {
+                          ...formData.mentorship,
+                          [plan]: {
+                            ...formData.mentorship[plan],
+                            features: [...formData.mentorship[plan].features, '']
+                          }
+                        }
+                      });
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {isEnglish ? 'Add Feature' : 'Ajouter une Caractéristique'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Alert>
