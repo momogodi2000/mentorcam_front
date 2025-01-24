@@ -23,14 +23,17 @@ export const login = async (email, password) => {
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login failed');
     }
 
     const data = await response.json();
     
-    // Store the token in localStorage or your preferred storage method
+    // Store the token in localStorage
     if (data.token) {
       localStorage.setItem('authToken', data.token);
+    } else {
+      throw new Error('Token not found in response');
     }
 
     // Determine redirect URL based on user type
@@ -106,12 +109,11 @@ export const register = async (userData) => {
  * Logout user and invalidate all sessions
  * @returns {Promise} Response indicating logout success
  */
-
 export const logout = async () => {
   try {
     const refreshToken = localStorage.getItem('refreshToken');
     const authToken = localStorage.getItem('authToken');
-    
+
     if (!authToken) {
       // Just clear local data if no token exists
       clearAuthData();
@@ -144,9 +146,8 @@ export const clearAuthData = () => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
-  // Add any other auth-related items you need to clear
+  sessionStorage.clear(); // Clear session storage as well
 };
-
 
 /**
  * Check if user is authenticated

@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Globe, Users, BookOpen, Calendar, Bell, BarChart2, Settings, Menu, X, BookOpenCheck, TrendingUp, Wallet, PhoneCall, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { logout } from '../../../authService';
+import { getUser } from '../../services/get_user'; // Import the getUser service
 
 const AdminLayout = ({ children }) => {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null); // State to store current user data
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch current user data on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const userData = await getUser(); // Use the getUser service
+        setCurrentUser(userData); // Set the current user data
+      } catch (error) {
+        console.error('Error fetching user data:', error); // Debugging log
+        // If there's an error, force logout
+        handleLogout();
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   const menuItems = [
     { icon: BarChart2, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/admin' },
@@ -29,13 +47,26 @@ const AdminLayout = ({ children }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      // Clear local storage and session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      // Redirect to login page and replace history
+      navigate('/login', { replace: true });
     } catch (error) {
-      // You might want to show a notification to the user here
       console.error('Logout failed:', error);
       // Still redirect to login page even if there's an error
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!currentUser) return 'A'; // Default initial for admin
+    const names = currentUser.full_name ? currentUser.full_name.split(' ') : [];
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'A';
   };
 
   return (
@@ -52,6 +83,7 @@ const AdminLayout = ({ children }) => {
               isDarkMode ? 'bg-gray-800' : 'bg-white'
             } border-r border-gray-200 dark:border-gray-700 shadow-xl`}
           >
+            {/* Sidebar content */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -75,6 +107,23 @@ const AdminLayout = ({ children }) => {
                 <X className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-gray-500'}`} />
               </button>
             </motion.div>
+
+            {/* User Info */}
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                  <span className="text-white font-bold">{getUserInitials()}</span>
+                </div>
+                <div>
+                  <h3 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {currentUser?.full_name || 'Loading...'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {currentUser?.email || 'Loading...'}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <nav className="space-y-2 p-6">
               {menuItems.map((item, index) => (
@@ -184,7 +233,7 @@ const AdminLayout = ({ children }) => {
           transition={{ delay: 0.2 }}
         >
           {children || <Outlet />}
-          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

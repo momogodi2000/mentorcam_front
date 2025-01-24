@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Sun, Moon, Globe, Users, BookOpen, Calendar, Search, Bell, Menu, X,
     BookOpenCheck, MessageSquare, Star, Award, User, Clock, Heart, MapPin,
@@ -6,11 +6,29 @@ import {
     BarChart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import { logout } from '../../../authService';
+import { getUser } from '../../services/get_user'; // Import the getUser service
 
 const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsEnglish }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null); // State to store current user data
     const navigate = useNavigate();
+
+    // Fetch current user data on component mount
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const userData = await getUser(); // Use the getUser service
+                setCurrentUser(userData); // Set the current user data
+            } catch (error) {
+                console.error('Error fetching user data:', error); // Debugging log
+                // If there's an error, force logout
+                handleLogout();
+            }
+        };
+
+        fetchCurrentUser();
+    }, []);
 
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
@@ -18,7 +36,7 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
     };
 
     const menuItems = [
-        { icon: BarChart, label: isEnglish ? 'Complete profile' : 'Finalise le profile', path: '/complete'  },
+        { icon: BarChart, label: isEnglish ? 'Complete profile' : 'Finalise le profile', path: '/complete' },
         { icon: ChartBar, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/professional_dashboard' },
         { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants' },
         { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions' },
@@ -29,12 +47,37 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
         { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres' }
     ];
 
-    const handleLogout = () => {
-        console.log('Logging out...');
+    const handleLogout = async () => {
+        try {
+            console.log('Logging out...'); // Debugging log
+            await logout();
+            // Clear local storage and session storage
+            localStorage.clear();
+            sessionStorage.clear();
+            // Redirect to login page and replace history
+            navigate('/login', { replace: true });
+            // Force a hard reload to clear any cached data
+            window.location.reload();
+        } catch (error) {
+            console.error('Logout failed:', error); // Debugging log
+            // Still redirect to login page even if there's an error
+            navigate('/login', { replace: true });
+        }
+    };
+
+    // Get user initials for avatar
+    const getUserInitials = () => {
+        if (!currentUser) return 'U';
+        const names = currentUser.full_name ? currentUser.full_name.split(' ') : [];
+        if (names.length >= 2) {
+            return `${names[0][0]}${names[1][0]}`.toUpperCase();
+        }
+        return currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'U';
     };
 
     return (
         <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+            {/* Sidebar */}
             <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             } ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border-r border-gray-200 dark:border-gray-700`}>
@@ -57,14 +100,17 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
                 <div className="p-4">
                     <div className="flex items-center space-x-3 mb-6">
                         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                            <span className="text-white font-bold">DK</span>
+                            <span className="text-white font-bold">{getUserInitials()}</span>
                         </div>
                         <div>
                             <h3 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                Dr. Kamga Paul
+                                {currentUser?.full_name || 'Loading...'}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                {isEnglish ? 'Web Development Expert' : 'Expert en Développement Web'}
+                                {currentUser?.email || 'Loading...'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                {currentUser?.phone_number || 'Loading...'}
                             </p>
                         </div>
                     </div>
@@ -72,8 +118,7 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
                     <nav className="space-y-1">
                         {menuItems.map((item, index) => (
                             <button
-                            onClick={() => navigate(item.path)}
-
+                                onClick={() => navigate(item.path)}
                                 key={index}
                                 className={`flex items-center w-full p-3 rounded-lg transition-colors ${
                                     index === 0

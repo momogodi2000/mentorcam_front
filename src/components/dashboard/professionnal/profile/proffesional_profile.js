@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Phone, MapPin, Book, Languages as LanguagesIcon, 
   Award, Clock, Calendar, CreditCard, Plus, X, Camera,
@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../ui/select";
+import { useToast } from "../../../ui/use-toast";
 import ProfessionalLayout from '../professionnal_layout';
-
+import axiosInstance from '../../../services/backend_connection';
 
 // Define all available domains and subdomains
 const DOMAINS = {
@@ -34,15 +35,17 @@ const DOMAINS = {
 };
 
 const CompleteProfile = () => {
+  const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [imagePreview, setImagePreview] = useState(null);
   const [expandedDomain, setExpandedDomain] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
-    // Basic Info
     fullName: '',
     email: '',
     phone: '',
@@ -54,40 +57,14 @@ const CompleteProfile = () => {
       twitter: '',
       website: ''
     },
-
-    // Professional Info
     title: '',
     biography: '',
     hourlyRate: '',
-    domains: [], // Array of {name: string, subdomains: string[]}
-    skills: [],
-    languages: [],
-    availability: {
-      weekdays: [],
-      weekends: false,
-      hoursPerWeek: '',
-      timezone: ''
-    },
-
-    // Education & Experience
+    domains: [],
     education: {
-      degrees: [], // Array of {degree: string, institution: string, year: string}
-      certifications: [] // Array of {name: string, issuer: string, year: string}
+      degrees: [],
+      certifications: []
     },
-    experience: {
-      years: '',
-      currentRole: '',
-      previousRoles: [] // Array of {title: string, company: string, duration: string}
-    },
-
-    // Portfolio
-    portfolio: {
-      projects: [], // Array of {name: string, description: string, link: string}
-      publications: [], // Array of {title: string, link: string}
-      achievements: [] // Array of strings
-    },
-
-    // Mentorship Plans
     mentorship: {
       monthly: {
         price: '',
@@ -110,16 +87,180 @@ const CompleteProfile = () => {
     }
   });
 
-  // Handlers
-  const handleImageChange = (e) => {
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const response = await axiosInstance.get('/professional-profile/');
+      if (response.data) {
+        const profileData = {
+          fullName: response.data.full_name,
+          email: response.data.email,
+          phone: response.data.phone_number,
+          location: response.data.location,
+          profilePicture: response.data.profile_picture,
+          socialLinks: {
+            linkedin: response.data.linkedin || '',
+            github: response.data.github || '',
+            twitter: response.data.twitter || '',
+            website: response.data.website || ''
+          },
+          title: response.data.title,
+          biography: response.data.biography,
+          hourlyRate: response.data.hourly_rate,
+          domains: response.data.domains || [],
+          education: {
+            degrees: response.data.education || [],
+            certifications: response.data.certifications || []
+          },
+          mentorship: {
+            monthly: response.data.mentorship_plans.find(plan => plan.plan_type === 'monthly') || {
+              price: '',
+              description: '',
+              features: [],
+              maxStudents: ''
+            },
+            trimester: response.data.mentorship_plans.find(plan => plan.plan_type === 'trimester') || {
+              price: '',
+              description: '',
+              features: [],
+              maxStudents: ''
+            },
+            yearly: response.data.mentorship_plans.find(plan => plan.plan_type === 'yearly') || {
+              price: '',
+              description: '',
+              features: [],
+              maxStudents: ''
+            }
+          }
+        };
+        setFormData(profileData);
+        if (response.data.profile_picture) {
+          setImagePreview(response.data.profile_picture);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: isEnglish ? "Error" : "Erreur",
+        description: isEnglish 
+          ? "Failed to load profile data" 
+          : "Échec du chargement des données du profil",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const transformFormDataForBackend = () => {
+    const formDataToSend = new FormData();
+    
+    // Append basic fields
+    formDataToSend.append('full_name', formData.fullName);
+    formDataToSend.append('email', formData.email);
+    formDataToSend.append('phone_number', formData.phone);
+    formDataToSend.append('location', formData.location);
+    
+    // Append social links
+    formDataToSend.append('linkedin', formData.socialLinks.linkedin);
+    formDataToSend.append('github', formData.socialLinks.github);
+    formDataToSend.append('twitter', formData.socialLinks.twitter);
+    formDataToSend.append('website', formData.socialLinks.website);
+    
+    // Append professional info
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('biography', formData.biography);
+    formDataToSend.append('hourly_rate', formData.hourlyRate);
+    
+    // Append domains as JSON string
+    formDataToSend.append('domains', JSON.stringify(formData.domains));
+    
+    // Append education and certifications as JSON strings
+    formDataToSend.append('education', JSON.stringify(formData.education.degrees));
+    formDataToSend.append('certifications', JSON.stringify(formData.education.certifications));
+    
+    // Append mentorship plans as JSON string
+    const mentorshipPlans = [
+      { plan_type: 'monthly', ...formData.mentorship.monthly },
+      { plan_type: 'trimester', ...formData.mentorship.trimester },
+      { plan_type: 'yearly', ...formData.mentorship.yearly }
+    ];
+    formDataToSend.append('mentorship_plans', JSON.stringify(mentorshipPlans));
+    
+    // Append profile picture if it exists and is a File object
+    if (formData.profilePicture instanceof File) {
+      formDataToSend.append('profile_picture', formData.profilePicture);
+    }
+    
+    return formDataToSend;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    try {
+      const formDataToSend = transformFormDataForBackend();
+      
+      try {
+        await axiosInstance.put('/professional-profile/', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } catch (error) {
+        if (error.response?.status === 404) {
+          await axiosInstance.post('/professional-profile/', formDataToSend, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } else {
+          throw error;
+        }
+      }
+
+      toast({
+        title: isEnglish ? "Success" : "Succès",
+        description: isEnglish 
+          ? "Profile successfully saved" 
+          : "Profil enregistré avec succès",
+      });
+    } catch (error) {
+      toast({
+        title: isEnglish ? "Error" : "Erreur",
+        description: isEnglish 
+          ? "Failed to save profile" 
+          : "Échec de l'enregistrement du profil",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+        
         setFormData(prev => ({...prev, profilePicture: file}));
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        toast({
+          title: isEnglish ? "Error" : "Erreur",
+          description: isEnglish 
+            ? "Failed to upload image" 
+            : "Échec du téléchargement de l'image",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -162,21 +303,20 @@ const CompleteProfile = () => {
     }));
   };
 
-  const addPortfolioItem = (type, data) => {
-    setFormData(prev => ({
-      ...prev,
-      portfolio: {
-        ...prev.portfolio,
-        [type]: [...prev.portfolio[type], data]
-      }
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission logic here
-  };
+  if (isLoading) {
+    return (
+      <ProfessionalLayout 
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        isEnglish={isEnglish}
+        setIsEnglish={setIsEnglish}
+      >
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
+        </div>
+      </ProfessionalLayout>
+    );
+  }
 
   // Render functions for each step
   const renderStep1 = () => (
