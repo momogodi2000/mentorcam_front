@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Users, BookOpen, Calendar, Star, ArrowRight, Menu, X, MapPin, Award, CheckCircle, PhoneCall, Mail, Globe } from 'lucide-react';
+import { ChevronRight, Users, BookOpen, Calendar, Star, ArrowRight, Menu, X, MapPin, Award, CheckCircle, PhoneCall, Mail, Globe, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import axiosInstance from '../services/backend_connection'; // Adjust the path
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('amateurs');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
 
   useEffect(() => {
     setIsVisible(true);
-    
+
     const handleScroll = () => {
       const elements = document.querySelectorAll('.fade-in-section');
       elements.forEach(el => {
@@ -27,6 +30,33 @@ const LandingPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.get('/professional-profile/search', {
+        params: { domain: searchQuery },
+      });
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error('Error searching mentors:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMentorClick = (mentorId) => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated'); // Check if user is logged in
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter ou vous inscrire pour accéder à ce mentor.');
+      navigate('/login'); // Redirect to login page
+    } else {
+      navigate(`/dashboard/mentor/${mentorId}`); // Redirect to mentor's profile
+    }
+  };
 
   const stats = [
     { number: "5000+", label: "Utilisateurs Actifs" },
@@ -64,19 +94,19 @@ const LandingPage = () => {
                 MentorCam
               </h1>
             </div>
-            
+
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-blue-600 transition-all hover:scale-105">Services</a>
               <a href="#about" className="text-gray-600 hover:text-blue-600 transition-all hover:scale-105">À Propos</a>
               <a href="#testimonials" className="text-gray-600 hover:text-blue-600 transition-all hover:scale-105">Témoignages</a>
               <div className="flex space-x-4">
-                <button 
+                <button
                   onClick={() => navigate('/login')}
                   className="px-6 py-2 text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50 transition-all"
                 >
                   Connexion
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/signup')}
                   className="px-6 py-2 text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all transform hover:scale-105"
                 >
@@ -99,15 +129,15 @@ const LandingPage = () => {
             <a href="#testimonials" className="block px-3 py-2 text-gray-600 hover:bg-blue-50 rounded-lg">Témoignages</a>
             <div className="space-y-2 pt-2">
               <button
-                                onClick={() => navigate('/login')}
-
-              className="w-full px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50">
+                onClick={() => navigate('/login')}
+                className="w-full px-3 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+              >
                 Connexion
               </button>
-              <button 
-                                onClick={() => navigate('/signup')}
-
-              className="w-full px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              <button
+                onClick={() => navigate('/signup')}
+                className="w-full px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
                 S'inscrire
               </button>
             </div>
@@ -122,7 +152,7 @@ const LandingPage = () => {
           <div className="absolute right-0 top-0 w-1/3 h-1/3 bg-blue-200/20 rounded-full blur-3xl" />
           <div className="absolute left-0 bottom-0 w-1/3 h-1/3 bg-purple-200/20 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <div className={`transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
@@ -134,7 +164,7 @@ const LandingPage = () => {
                 <span className="text-blue-600">des experts camerounais</span>
               </h1>
               <p className="max-w-2xl mx-auto text-lg text-gray-600 mb-8">
-                Connectez-vous avec des professionnels expérimentés, participez à des formations 
+                Connectez-vous avec des professionnels expérimentés, participez à des formations
                 pratiques et construisez votre avenir professionnel au Cameroun.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
@@ -142,7 +172,10 @@ const LandingPage = () => {
                   Commencer gratuitement
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </button>
-                <button className="px-8 py-4 border-2 border-blue-600 text-blue-600 rounded-full font-medium hover:bg-blue-50 transform hover:scale-105 transition-all">
+                <button
+                  onClick={() => setIsSearchModalOpen(true)}
+                  className="px-8 py-4 border-2 border-blue-600 text-blue-600 rounded-full font-medium hover:bg-blue-50 transform hover:scale-105 transition-all"
+                >
                   Découvrir les mentors
                 </button>
               </div>
@@ -150,6 +183,74 @@ const LandingPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Search Modal */}
+      {isSearchModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-3xl p-8 relative">
+            <button
+              onClick={() => setIsSearchModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-gray-600 hover:text-gray-900"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Rechercher un mentor</h2>
+            <div className="flex items-center gap-4 mb-6">
+              <input
+                type="text"
+                placeholder="Rechercher un domaine (ex: Développement Web)"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                onClick={handleSearch}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all flex items-center"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Rechercher
+              </button>
+            </div>
+
+            {/* Search Results */}
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchResults.length > 0 ? (
+                  searchResults.map((mentor) => (
+                    <div
+                      key={mentor._id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleMentorClick(mentor._id)}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={mentor.profilePicture || '/default-avatar.png'}
+                          alt={mentor.fullName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{mentor.fullName}</h3>
+                          <p className="text-sm text-gray-600">{mentor.title}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-600 text-center py-8">
+                    Aucun mentor trouvé pour ce domaine.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
       {/* Stats Section */}
       <div className="py-16 bg-white">

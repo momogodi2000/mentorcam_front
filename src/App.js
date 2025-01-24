@@ -23,6 +23,7 @@ import ProfilePage from './components/dashboard/beginner/profile/profile_new';
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
 
 
+
 import BeginnerLayout from './components/dashboard/beginner/biginner_layout';
 import './styles/globals.css';
 
@@ -54,7 +55,9 @@ export default function App() {
         <Route path="/forgot-password" element={<PasswordResetPages />} />
         <Route path="/reset-password" element={<PasswordResetPages stage="reset" />} />
         <Route path="/verify-reset" element={<PasswordResetPages stage="verify" />} />
-        
+
+
+
         {/* Admin routes */}
         <Route path="/admin_dashboard" element={<AdminDashboardWithLayout />} />
         

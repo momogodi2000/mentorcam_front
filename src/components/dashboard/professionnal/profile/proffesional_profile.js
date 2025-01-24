@@ -21,7 +21,6 @@ import { useToast } from "../../../ui/use-toast";
 import ProfessionalLayout from '../professionnal_layout';
 import axiosInstance from '../../../services/backend_connection';
 
-// Define all available domains and subdomains
 const DOMAINS = {
   "Software Development": ["Web Development", "Mobile App Development", "Game Development", "DevOps & CI/CD", "Software Testing & QA"],
   "Data Science & Machine Learning": ["Data Analytics", "Machine Learning", "Deep Learning", "Data Visualization", "Natural Language Processing"],
@@ -44,7 +43,6 @@ const CompleteProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -96,9 +94,9 @@ const CompleteProfile = () => {
       const response = await axiosInstance.get('/professional-profile/');
       if (response.data) {
         const profileData = {
-          fullName: response.data.full_name,
-          email: response.data.email,
-          phone: response.data.phone_number,
+          fullName: response.data.user.full_name,
+          email: response.data.user.email,
+          phone: response.data.user.phone_number,
           location: response.data.location,
           profilePicture: response.data.profile_picture,
           socialLinks: {
@@ -318,7 +316,6 @@ const CompleteProfile = () => {
     );
   }
 
-  // Render functions for each step
   const renderStep1 = () => (
     <div className="space-y-6 animate-fadeIn">
       {/* Profile Picture */}
