@@ -1,4 +1,5 @@
-import axiosInstance from '../backend_connection'; // Use the axiosInstance from backend_connection
+// professionalProfileService.js
+import axiosInstance from '../backend_connection';
 
 const API_URL = 'http://127.0.0.1:8000/api';
 
@@ -13,10 +14,14 @@ export const getProfessionalProfile = async () => {
   }
 };
 
-// Create or update the professional profile
-export const saveProfessionalProfile = async (profileData) => {
+// Create or update professional profile with proper file handling
+export const saveProfessionalProfile = async (formData) => {
   try {
-    const response = await axiosInstance.post(`${API_URL}/professional-profile/`, profileData);
+    const response = await axiosInstance.post(`${API_URL}/professional-profile/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     console.error('Error saving professional profile:', error);
@@ -24,10 +29,14 @@ export const saveProfessionalProfile = async (profileData) => {
   }
 };
 
-// Update the professional profile
-export const updateProfessionalProfile = async (profileData) => {
+// Update professional profile with proper file handling
+export const updateProfessionalProfile = async (formData) => {
   try {
-    const response = await axiosInstance.put(`${API_URL}/professional-profile/`, profileData);
+    const response = await axiosInstance.put(`${API_URL}/professional-profile/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     console.error('Error updating professional profile:', error);

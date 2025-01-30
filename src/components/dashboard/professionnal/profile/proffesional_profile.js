@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "../../../ui/use-toast";
 import { Button } from '../../../ui/button';
-
 import ProfessionalLayout from '../professionnal_layout';
 import {
   getProfessionalProfile,
   saveProfessionalProfile,
   updateProfessionalProfile,
-} from '../../../services/professionnal/professionalProfileService.js';
+} from '../../../services/professionnal/professionalProfileService';
+import { getUser } from '../../../services/get_user';
 import PersonalInfoPage from './PersonalInfoPage';
 import ProfessionalInfoPage from './ProfessionalInfoPage.js';
 import MentorshipPlansPage from './MentorshipPlansPage';
@@ -20,8 +20,10 @@ const CompleteProfile = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   const [formData, setFormData] = useState({
+    user_id: '',
     fullName: '',
     email: '',
     phone: '',
@@ -63,48 +65,74 @@ const CompleteProfile = () => {
     }
   });
 
+  // Fetch user data first
   useEffect(() => {
-    fetchProfileData();
+    const fetchUserData = async () => {
+      try {
+        const user = await getUser();
+        setUserData(user);
+        // Pre-fill form with user data
+        setFormData(prev => ({
+          ...prev,
+          user_id: user.id,
+          fullName: user.full_name,
+          email: user.email,
+          phone: user.phone_number
+        }));
+        // After getting user data, fetch profile data
+        fetchProfileData(user.id);
+      } catch (error) {
+        toast({
+          title: isEnglish ? "Error" : "Erreur",
+          description: isEnglish 
+            ? "Failed to load user data" 
+            : "Échec du chargement des données utilisateur",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = async (userId) => {
     try {
       const response = await getProfessionalProfile();
-      if (response.data) {
+      if (response) {
         const profileData = {
-          fullName: response.data.user.full_name,
-          email: response.data.user.email,
-          phone: response.data.user.phone_number,
-          location: response.data.location,
-          profilePicture: response.data.profile_picture,
+          ...formData,
+          user_id: userId,
+          location: response.location || '',
+          profilePicture: response.profile_picture || null,
           socialLinks: {
-            linkedin: response.data.linkedin || '',
-            github: response.data.github || '',
-            twitter: response.data.twitter || '',
-            website: response.data.website || ''
+            linkedin: response.linkedin || '',
+            github: response.github || '',
+            twitter: response.twitter || '',
+            website: response.website || ''
           },
-          title: response.data.title,
-          biography: response.data.biography,
-          hourlyRate: response.data.hourly_rate,
-          domains: response.data.domains || [],
+          title: response.title || '',
+          biography: response.biography || '',
+          hourlyRate: response.hourly_rate || '',
+          domains: response.domains || [],
           education: {
-            degrees: response.data.education || [],
-            certifications: response.data.certifications || []
+            degrees: response.education || [],
+            certifications: response.certifications || []
           },
           mentorship: {
-            monthly: response.data.mentorship_plans.find(plan => plan.plan_type === 'monthly') || {
+            monthly: response.mentorship_plans?.find(plan => plan.plan_type === 'monthly') || {
               price: '',
               description: '',
               features: [],
               maxStudents: ''
             },
-            trimester: response.data.mentorship_plans.find(plan => plan.plan_type === 'trimester') || {
+            trimester: response.mentorship_plans?.find(plan => plan.plan_type === 'trimester') || {
               price: '',
               description: '',
               features: [],
               maxStudents: ''
             },
-            yearly: response.data.mentorship_plans.find(plan => plan.plan_type === 'yearly') || {
+            yearly: response.mentorship_plans?.find(plan => plan.plan_type === 'yearly') || {
               price: '',
               description: '',
               features: [],
@@ -113,18 +141,20 @@ const CompleteProfile = () => {
           }
         };
         setFormData(profileData);
-        if (response.data.profile_picture) {
-          setImagePreview(response.data.profile_picture);
+        if (response.profile_picture) {
+          setImagePreview(response.profile_picture);
         }
       }
     } catch (error) {
-      toast({
-        title: isEnglish ? "Error" : "Erreur",
-        description: isEnglish 
-          ? "Failed to load profile data" 
-          : "Échec du chargement des données du profil",
-        variant: "destructive"
-      });
+      if (error.response?.status !== 404) {
+        toast({
+          title: isEnglish ? "Error" : "Erreur",
+          description: isEnglish 
+            ? "Failed to load profile data" 
+            : "Échec du chargement des données du profil",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +163,17 @@ const CompleteProfile = () => {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: isEnglish ? "Error" : "Erreur",
+          description: isEnglish 
+            ? "Image size should not exceed 5MB" 
+            : "La taille de l'image ne doit pas dépasser 5 Mo",
+          variant: "destructive"
+        });
+        return;
+      }
+
       try {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -151,6 +192,49 @@ const CompleteProfile = () => {
         });
       }
     }
+  };
+
+  const transformFormDataForBackend = () => {
+    const formDataToSend = new FormData();
+    
+    // Append user ID
+    formDataToSend.append('user_id', userData.id);
+    
+    // Append basic fields
+    formDataToSend.append('full_name', formData.fullName);
+    formDataToSend.append('email', formData.email);
+    formDataToSend.append('phone_number', formData.phone);
+    formDataToSend.append('location', formData.location);
+    
+    // Append social links
+    formDataToSend.append('linkedin', formData.socialLinks.linkedin);
+    formDataToSend.append('github', formData.socialLinks.github);
+    formDataToSend.append('twitter', formData.socialLinks.twitter);
+    formDataToSend.append('website', formData.socialLinks.website);
+    
+    // Append professional info
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('biography', formData.biography);
+    formDataToSend.append('hourly_rate', formData.hourlyRate);
+    
+    // Append domains, education, and mentorship plans as JSON strings
+    formDataToSend.append('domains', JSON.stringify(formData.domains));
+    formDataToSend.append('education', JSON.stringify(formData.education.degrees));
+    formDataToSend.append('certifications', JSON.stringify(formData.education.certifications));
+    
+    const mentorshipPlans = [
+      { plan_type: 'monthly', ...formData.mentorship.monthly },
+      { plan_type: 'trimester', ...formData.mentorship.trimester },
+      { plan_type: 'yearly', ...formData.mentorship.yearly }
+    ];
+    formDataToSend.append('mentorship_plans', JSON.stringify(mentorshipPlans));
+    
+    // Append profile picture if it exists and is a File object
+    if (formData.profilePicture instanceof File) {
+      formDataToSend.append('profile_picture', formData.profilePicture);
+    }
+    
+    return formDataToSend;
   };
 
   const handleSubmit = async (e) => {
@@ -189,48 +273,7 @@ const CompleteProfile = () => {
     }
   };
 
-  const transformFormDataForBackend = () => {
-    const formDataToSend = new FormData();
-    
-    // Append basic fields
-    formDataToSend.append('full_name', formData.fullName);
-    formDataToSend.append('email', formData.email);
-    formDataToSend.append('phone_number', formData.phone);
-    formDataToSend.append('location', formData.location);
-    
-    // Append social links
-    formDataToSend.append('linkedin', formData.socialLinks.linkedin);
-    formDataToSend.append('github', formData.socialLinks.github);
-    formDataToSend.append('twitter', formData.socialLinks.twitter);
-    formDataToSend.append('website', formData.socialLinks.website);
-    
-    // Append professional info
-    formDataToSend.append('title', formData.title);
-    formDataToSend.append('biography', formData.biography);
-    formDataToSend.append('hourly_rate', formData.hourlyRate);
-    
-    // Append domains as JSON string
-    formDataToSend.append('domains', JSON.stringify(formData.domains));
-    
-    // Append education and certifications as JSON strings
-    formDataToSend.append('education', JSON.stringify(formData.education.degrees));
-    formDataToSend.append('certifications', JSON.stringify(formData.education.certifications));
-    
-    // Append mentorship plans as JSON string
-    const mentorshipPlans = [
-      { plan_type: 'monthly', ...formData.mentorship.monthly },
-      { plan_type: 'trimester', ...formData.mentorship.trimester },
-      { plan_type: 'yearly', ...formData.mentorship.yearly }
-    ];
-    formDataToSend.append('mentorship_plans', JSON.stringify(mentorshipPlans));
-    
-    // Append profile picture if it exists and is a File object
-    if (formData.profilePicture instanceof File) {
-      formDataToSend.append('profile_picture', formData.profilePicture);
-    }
-    
-    return formDataToSend;
-  };
+
 
   if (isLoading) {
     return (
@@ -266,9 +309,10 @@ const CompleteProfile = () => {
           </p>
         </div>
 
-        <div className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
           <div className="flex justify-between items-center">
             <Button
+              type="button"
               variant="outline"
               onClick={() => setCurrentStep(currentStep - 1)}
               disabled={currentStep === 1}
@@ -289,47 +333,42 @@ const CompleteProfile = () => {
                 />
               ))}
             </div>
-            {currentStep < 3 ? (
-              <Button
-                onClick={() => setCurrentStep(currentStep + 1)}
-              >
-                {isEnglish ? 'Next' : 'Suivant'}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-              >
-                {isEnglish ? 'Submit' : 'Soumettre'}
-              </Button>
-            )}
+            <Button
+              type={currentStep === 3 ? "submit" : "button"}
+              onClick={currentStep < 3 ? () => setCurrentStep(currentStep + 1) : undefined}
+              disabled={isSaving}
+            >
+              {currentStep === 3 
+                ? (isEnglish ? (isSaving ? 'Saving...' : 'Submit') : (isSaving ? 'Enregistrement...' : 'Soumettre'))
+                : (isEnglish ? 'Next' : 'Suivant')}
+            </Button>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()}>
-            {currentStep === 1 && (
-              <PersonalInfoPage 
-                formData={formData}
-                setFormData={setFormData}
-                handleImageChange={handleImageChange}
-                imagePreview={imagePreview}
-                isEnglish={isEnglish}
-              />
-            )}
-            {currentStep === 2 && (
-              <ProfessionalInfoPage 
-                formData={formData}
-                setFormData={setFormData}
-                isEnglish={isEnglish}
-              />
-            )}
-            {currentStep === 3 && (
-              <MentorshipPlansPage 
-                formData={formData}
-                setFormData={setFormData}
-                isEnglish={isEnglish}
-              />
-            )}
-          </form>
-        </div>
+          {currentStep === 1 && (
+            <PersonalInfoPage 
+              formData={formData}
+              setFormData={setFormData}
+              handleImageChange={handleImageChange}
+              imagePreview={imagePreview}
+              isEnglish={isEnglish}
+              userData={userData}
+            />
+          )}
+          {currentStep === 2 && (
+            <ProfessionalInfoPage 
+              formData={formData}
+              setFormData={setFormData}
+              isEnglish={isEnglish}
+            />
+          )}
+          {currentStep === 3 && (
+            <MentorshipPlansPage 
+              formData={formData}
+              setFormData={setFormData}
+              isEnglish={isEnglish}
+            />
+          )}
+        </form>
       </div>
     </ProfessionalLayout>
   );

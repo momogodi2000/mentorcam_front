@@ -35,42 +35,6 @@ const PersonalInfoPage = ({ formData, setFormData, handleImageChange, imagePrevi
 
       {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{isEnglish ? 'Full Name' : 'Nom Complet'}</label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input 
-              className="pl-10" 
-              value={formData.fullName}
-              onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{isEnglish ? 'Email' : 'Email'}</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input 
-              className="pl-10" 
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{isEnglish ? 'Phone' : 'Téléphone'}</label>
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input 
-              className="pl-10"
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-            />
-          </div>
-        </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">{isEnglish ? 'Location' : 'Localisation'}</label>
