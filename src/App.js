@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LandingPage from './components/landing_pages/homepage';
 import AuthPages from './components/auth/AuthPages';
 import PasswordResetPages from './components/auth/PasswordResetPages';
@@ -22,15 +22,28 @@ import ProfilePage from './components/dashboard/beginner/profile/profile_new';
 
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
 
+import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
 
 
 import BeginnerLayout from './components/dashboard/beginner/biginner_layout';
 import './styles/globals.css';
 
 // Optional: Add protected route wrapper
-const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = false; // Replace with your auth logic
-  return isAuthenticated ? children : <Navigate to="/login" />;
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const navigate = useNavigate();
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'; // Ensure boolean
+  const userRole = localStorage.getItem('userRole');
+
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login'); // Redirect to login if not authenticated
+    } else if (requiredRole && userRole !== requiredRole) {
+      navigate('/'); // Redirect to home if user role doesn't match
+    }
+  }, [isAuthenticated, userRole, navigate, requiredRole]);
+
+  // Render children only if authenticated and role matches
+  return isAuthenticated && (!requiredRole || userRole === requiredRole) ? children : null;
 };
 
 // Wrapper component to ensure AdminDashboard is rendered within AdminLayout
@@ -41,8 +54,6 @@ const AdminDashboardWithLayout = () => {
     </AdminLayout>
   );
 };
-
-
 
 export default function App() {
   return (
@@ -56,62 +67,140 @@ export default function App() {
         <Route path="/reset-password" element={<PasswordResetPages stage="reset" />} />
         <Route path="/verify-reset" element={<PasswordResetPages stage="verify" />} />
 
-
-
         {/* Admin routes */}
-        <Route path="/admin_dashboard" element={<AdminDashboardWithLayout />} />
+        <Route
+          path="/admin_dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboardWithLayout />
+            </ProtectedRoute>
+          }
+        />
         
         {/* Nested admin routes */}
         <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-
-        <Route path="/admin/users" element={<UserListPage />} />
-        <Route path="/admin/users/:id" element={<UserFormPage />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <UserListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users/:id"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <UserFormPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
         
-        {/* amateur pannel */}
-        <Route path="/beginner_dashboard" element={<BeginnerDashboard stage="beginner" />} />
+        {/* Beginner routes */}
+        <Route
+          path="/beginner_dashboard"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <BeginnerDashboard stage="beginner" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/learning"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <LearningPathPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mentors"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <FindMentors />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sessions"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <SessionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <InstantMessages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/achievements"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <AchievementsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/learning" element={<LearningPathPage />} />
-        <Route path="/mentors" element={<FindMentors />} />
-        <Route path="/sessions" element={<SessionsPage />} />
-        <Route path="/chat" element={<InstantMessages />} />
-        <Route path="/achievements" element={<AchievementsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-
-        {/* professional route dashbaord */}
-        <Route path="/professional_dashboard" element={<ProfessionalDashboard stage="professional" />} />
-
-        <Route path="/complete" element={<CompleteProfile />} />
-
-
-
-        {/* Other dashboard routes */}
-        <Route path="/institut_dashboard" element={<InstitutionDashboard stage="institut" />} />
+        {/* Professional routes */}
+        <Route
+          path="/professional_dashboard"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <ProfessionalDashboard stage="professional" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/complete"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <CompleteProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+                  path="/setting"
+                  element={
+                    <ProtectedRoute requiredRole="professional">
+                      <SettingPage />
+                    </ProtectedRoute>
+                  }
+                />
+        {/* Institution routes */}
+        <Route
+          path="/institut_dashboard"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <InstitutionDashboard stage="institut" />
+            </ProtectedRoute>
+          }
+        />
         
         {/* Other routes */}
         <Route path="/Contact_us" element={<ContactPage />} />
         <Route path="/about_us" element={<AboutUs />} />
-        
-        {/* Protected routes example */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <div>Dashboard Page</div>
-            </ProtectedRoute>
-          }
-        />
-
-         {/* Protected routes example */}
-         <Route
-          path="/beginner_dashboard"
-          element={
-            <ProtectedRoute>
-              <div>Dashboard Page</div>
-            </ProtectedRoute>
-          }
-        />
         
         {/* 404 route */}
         <Route path="*" element={<Navigate to="/" replace />} />

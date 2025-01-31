@@ -1,45 +1,46 @@
-// professionalProfileService.js
-import axiosInstance from '../backend_connection';
+import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8000/api';
+const API_URL = 'http://localhost:8000/api'; // Replace with your Django backend URL
 
-// Get the current user's professional profile
-export const getProfessionalProfile = async () => {
+const getProfessionalProfile = async () => {
   try {
-    const response = await axiosInstance.get(`${API_URL}/professional-profile/`);
+    const response = await axios.get(`${API_URL}/profile/`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+      },
+    });
     return response.data;
   } catch (error) {
-    console.error('Error fetching professional profile:', error);
-    throw error;
+    throw error.response?.data || error.message;
   }
 };
 
-// Create or update professional profile with proper file handling
-export const saveProfessionalProfile = async (formData) => {
+const saveProfessionalProfile = async (formData) => {
   try {
-    const response = await axiosInstance.post(`${API_URL}/professional-profile/`, formData, {
+    const response = await axios.post(`${API_URL}/profile/`, formData, {
       headers: {
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
         'Content-Type': 'multipart/form-data',
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Error saving professional profile:', error);
-    throw error;
+    throw error.response?.data || error.message;
   }
 };
 
-// Update professional profile with proper file handling
-export const updateProfessionalProfile = async (formData) => {
+const updateProfessionalProfile = async (formData) => {
   try {
-    const response = await axiosInstance.put(`${API_URL}/professional-profile/`, formData, {
+    const response = await axios.put(`${API_URL}/profile/`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        'Content-Type': 'multipart/form-data',  // Required for file uploads
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Error updating professional profile:', error);
-    throw error;
+    throw error.response?.data || error.message;
   }
 };
+
+export { getProfessionalProfile, saveProfessionalProfile, updateProfessionalProfile };

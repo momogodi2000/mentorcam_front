@@ -24,6 +24,7 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedDomain, setExpandedDomain] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: '',
@@ -111,9 +112,22 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
     }));
   };
 
+  // Validate form fields
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.title.trim()) errors.title = isEnglish ? 'Professional Title is required' : 'Le titre professionnel est requis';
+    if (!formData.biography.trim()) errors.biography = isEnglish ? 'Professional Biography is required' : 'La biographie professionnelle est requise';
+    if (!formData.hourlyRate) errors.hourlyRate = isEnglish ? 'Hourly Rate is required' : 'Le taux horaire est requis';
+    if (formData.domains.length === 0) errors.domains = isEnglish ? 'At least one domain must be selected' : 'Au moins un domaine doit être sélectionné';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       if (profile) {
         // Update existing profile
@@ -141,10 +155,10 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
     >
       {/* Display User Information */}
       {profile && (
-        <div>
-          <h2>{profile.full_name}</h2>
-          <p>Email: {profile.email}</p>
-          <p>Phone: {profile.phone_number}</p>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h2 className="text-xl font-semibold">{profile.full_name}</h2>
+          <p className="text-gray-600">Email: {profile.email}</p>
+          <p className="text-gray-600">Phone: {profile.phone_number}</p>
         </div>
       )}
 
@@ -159,6 +173,7 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder={isEnglish ? 'e.g. Senior Software Engineer' : 'ex. Ingénieur Logiciel Senior'}
           />
+          {formErrors.title && <p className="text-red-500 text-sm">{formErrors.title}</p>}
         </div>
 
         <div className="space-y-2">
@@ -171,6 +186,7 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
             onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
             placeholder="0"
           />
+          {formErrors.hourlyRate && <p className="text-red-500 text-sm">{formErrors.hourlyRate}</p>}
         </div>
       </div>
 
@@ -179,6 +195,7 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
         <h3 className="text-lg font-semibold">
           {isEnglish ? 'Domains of Expertise' : 'Domaines d\'expertise'}
         </h3>
+        {formErrors.domains && <p className="text-red-500 text-sm">{formErrors.domains}</p>}
         <div className="space-y-4">
           {Object.entries(DOMAINS).map(([domain, subdomains]) => (
             <Card key={domain}>
@@ -240,6 +257,7 @@ const ProfessionalInfoPage = ({ isEnglish }) => {
               : 'Partagez votre parcours professionnel, votre expertise et ce qui fait de vous un excellent mentor...'
           }
         />
+        {formErrors.biography && <p className="text-red-500 text-sm">{formErrors.biography}</p>}
       </div>
 
       {/* Education & Certifications */}

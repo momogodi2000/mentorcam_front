@@ -44,7 +44,7 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
         { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus' },
         { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours' },
         { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages' },
-        { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres' }
+        { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres',path: '/setting' }
     ];
 
     const handleLogout = async () => {

@@ -11,9 +11,9 @@ import { Switch } from '../../../ui/Switch';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../ui/avatar';
 import { getUser } from '../../../services/get_user'; // Import services
 import { updateUser } from '../../../services/update_profile'; // Import services
-import BeginnerLayout from '../../beginner/biginner_layout'; 
+import ProfessionalLayout from '../professionnal_layout'; // Import ProfessionalLayout
 
-const ProfilePage = () => {
+const SettingsPage = () => {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isEnglish, setIsEnglish] = useState(true);
     const [activeTab, setActiveTab] = useState('profile');
@@ -106,7 +106,7 @@ const ProfilePage = () => {
     ];
 
     return (
-        <BeginnerLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isEnglish={isEnglish} setIsEnglish={setIsEnglish}>
+        <ProfessionalLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isEnglish={isEnglish} setIsEnglish={setIsEnglish}>
             <div className="max-w-7xl mx-auto p-4 space-y-6">
                 {/* Header Section */}
                 <motion.div
@@ -330,8 +330,8 @@ const ProfilePage = () => {
                     </div>
                 </div>
             </div>
-        </BeginnerLayout>
+        </ProfessionalLayout>
     );
 };
 
-export default ProfilePage;
+export default SettingsPage;

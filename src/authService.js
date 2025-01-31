@@ -28,12 +28,14 @@ export const login = async (email, password) => {
     }
 
     const data = await response.json();
-    
-    // Store the token in localStorage
-    if (data.token) {
+
+    // Store the token and user role in localStorage
+    if (data.token && data.user_type) {
       localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userRole', data.user_type);
+      localStorage.setItem('isAuthenticated', true); // Add this line
     } else {
-      throw new Error('Token not found in response');
+      throw new Error('Token or user type not found in response');
     }
 
     // Determine redirect URL based on user type

@@ -29,13 +29,13 @@ const AuthPages = ({ isSignUp = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+  
     // Password validation for signup
     if (isSignUp && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    
+  
     try {
       if (isSignUp) {
         const userData = {
@@ -51,7 +51,7 @@ const AuthPages = ({ isSignUp = false }) => {
         navigate(response.redirect_url);
       } else {
         const response = await login(formData.email, formData.password);
-        navigate(response.redirect_url);
+        navigate(response.redirect_url); // Navigate to the redirect URL after login
       }
     } catch (error) {
       setError('Authentication failed. Please check your credentials and try again.');
