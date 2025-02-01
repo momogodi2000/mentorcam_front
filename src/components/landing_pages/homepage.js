@@ -33,13 +33,14 @@ const LandingPage = () => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-
+  
     setIsLoading(true);
     try {
-      const response = await axiosInstance.get('/professional-profile/search', {
+      const response = await axiosInstance.get('/mentors/search/', {
         params: { domain: searchQuery },
       });
-      setSearchResults(response.data);
+      
+      setSearchResults(response.data.results);
     } catch (error) {
       console.error('Error searching mentors:', error);
       setSearchResults([]);
@@ -47,6 +48,7 @@ const LandingPage = () => {
       setIsLoading(false);
     }
   };
+  
 
   const handleMentorClick = (mentorId) => {
     const isAuthenticated = localStorage.getItem('isAuthenticated'); // Check if user is logged in
@@ -219,33 +221,54 @@ const LandingPage = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {searchResults.length > 0 ? (
-                  searchResults.map((mentor) => (
-                    <div
-                      key={mentor._id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
-                      onClick={() => handleMentorClick(mentor._id)}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <img
-                          src={mentor.profilePicture || '/default-avatar.png'}
-                          alt={mentor.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{mentor.fullName}</h3>
-                          <p className="text-sm text-gray-600">{mentor.title}</p>
+              {searchResults.length > 0 ? (
+                searchResults.map((mentor) => (
+                  <div
+                    key={mentor.id} // Changed from mentor._id to mentor.id
+                    className="flex items-center justify-between p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    onClick={() => handleMentorClick(mentor.id)} // Changed from mentor._id to mentor.id
+                  >
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={mentor.profile_picture || '/default-avatar.png'} // Changed from mentor.profilePicture to mentor.profile_picture
+                        alt={mentor.full_name} // Changed from mentor.fullName to mentor.full_name
+                        className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
+                      />
+                      <div>
+                        <h3 className="font-bold text-gray-900">{mentor.full_name}</h3> {/* Changed from mentor.fullName to mentor.full_name */}
+                        <p className="text-blue-600">{mentor.title}</p>
+                        <p className="text-sm text-gray-600 mt-1">{mentor.domain_name}</p> {/* Added domain_name */}
+                        <div className="flex items-center mt-2">
+                          <MapPin className="w-4 h-4 text-gray-400 mr-1" /> {/* Added location icon */}
+                          <span className="text-sm text-gray-600">{mentor.location}</span> {/* Added location */}
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600 text-center py-8">
-                    Aucun mentor trouvé pour ce domaine.
-                  </p>
-                )}
-              </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-blue-600">
+                        ${mentor.hourly_rate}/hour {/* Added hourly_rate */}
+                      </p>
+                      <p className="text-sm text-gray-600">{mentor.plan_type} plan</p> {/* Added plan_type */}
+                      <button
+                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent parent onClick from firing
+                          handleMentorClick(mentor.id); // Changed from mentor._id to mentor.id
+                        }}
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-600">
+                  No mentors found matching your search criteria. {/* Updated no results message */}
+                </div>
+              )}
+            </div>
+
+              
             )}
           </div>
         </div>
