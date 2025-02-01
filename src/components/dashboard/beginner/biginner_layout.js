@@ -33,6 +33,7 @@ const BeginnerLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsE
     { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '/sessions' },
     { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/chat' },
     { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/achievements' },
+    { icon: Star, label: isEnglish ? 'Rate' : 'Évaluer', path: '/rate' },
     { icon: User, label: isEnglish ? 'Profile' : 'Profil', path: '/profile' }
   ];
 

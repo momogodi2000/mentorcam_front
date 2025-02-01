@@ -11,6 +11,7 @@ const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthModal, setIsAuthModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -224,46 +225,68 @@ const LandingPage = () => {
               {searchResults.length > 0 ? (
                 searchResults.map((mentor) => (
                   <div
-                    key={mentor.id} // Changed from mentor._id to mentor.id
-                    className="flex items-center justify-between p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer"
-                    onClick={() => handleMentorClick(mentor.id)} // Changed from mentor._id to mentor.id
+                    key={mentor.id}
+                    className="bg-white rounded-lg shadow-md overflow-hidden"
                   >
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={mentor.profile_picture || '/default-avatar.png'} // Changed from mentor.profilePicture to mentor.profile_picture
-                        alt={mentor.full_name} // Changed from mentor.fullName to mentor.full_name
-                        className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
-                      />
-                      <div>
-                        <h3 className="font-bold text-gray-900">{mentor.full_name}</h3> {/* Changed from mentor.fullName to mentor.full_name */}
-                        <p className="text-blue-600">{mentor.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{mentor.domain_name}</p> {/* Added domain_name */}
-                        <div className="flex items-center mt-2">
-                          <MapPin className="w-4 h-4 text-gray-400 mr-1" /> {/* Added location icon */}
-                          <span className="text-sm text-gray-600">{mentor.location}</span> {/* Added location */}
+                    <div className="p-6">
+                      {/* Mentor Profile Section */}
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={mentor.profile_picture || '/default-avatar.png'}
+                          alt={mentor.full_name}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
+                        />
+                        <div>
+                          <h3 className="font-bold text-gray-900">{mentor.full_name}</h3>
+                          <p className="text-blue-600">{mentor.title}</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {mentor.domain_name}
+                            {mentor.subdomains && mentor.subdomains.length > 0 && (
+                              <span className="text-gray-400"> • {mentor.subdomains.join(', ')}</span>
+                            )}
+                          </p>
+                          <div className="flex items-center mt-2">
+                            <MapPin className="w-4 h-4 text-gray-400 mr-1" />
+                            <span className="text-sm text-gray-600">{mentor.location}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-blue-600">
-                        ${mentor.hourly_rate}/hour {/* Added hourly_rate */}
-                      </p>
-                      <p className="text-sm text-gray-600">{mentor.plan_type} plan</p> {/* Added plan_type */}
-                      <button
-                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent parent onClick from firing
-                          handleMentorClick(mentor.id); // Changed from mentor._id to mentor.id
-                        }}
-                      >
-                        View Profile
-                      </button>
+            
+                      {/* Mentor Biography Section */}
+                      <div className="mt-4">
+                        <p className="text-gray-600 line-clamp-3">{mentor.biography}</p>
+                      </div>
+            
+                      {/* Mentor Education and Action Buttons Section */}
+                      <div className="mt-4 border-t pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              {mentor.degree} • {mentor.institution}
+                            </p>
+                          </div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => navigate('/login')}
+                              className="px-4 py-2 text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50 transition-all"
+                            >
+                              Se connecter
+                            </button>
+                            <button
+                              onClick={() => navigate('/signup')}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all"
+                            >
+                              S'inscrire
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8 text-gray-600">
-                  No mentors found matching your search criteria. {/* Updated no results message */}
+                  Aucun mentor trouvé pour ce domaine.
                 </div>
               )}
             </div>
@@ -274,6 +297,32 @@ const LandingPage = () => {
         </div>
       )}
 
+{isAuthModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+      <h3 className="text-2xl font-bold text-gray-900 mb-4">
+        Accédez à tous nos services
+      </h3>
+      <p className="text-gray-600 mb-6">
+        Connectez-vous ou créez un compte pour accéder à tous les services de mentorat et communiquer avec nos mentors.
+      </p>
+      <div className="flex flex-col space-y-3">
+        <button
+          onClick={() => navigate('/login')}
+          className="w-full px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all"
+        >
+          Se connecter
+        </button>
+        <button
+          onClick={() => navigate('/signup')}
+          className="w-full px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-full hover:bg-blue-50 transition-all"
+        >
+          S'inscrire
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Stats Section */}
       <div className="py-16 bg-white">

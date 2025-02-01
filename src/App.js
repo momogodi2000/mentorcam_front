@@ -21,6 +21,8 @@ import AchievementsPage from './components/dashboard/beginner/achievement/gold';
 import ProfilePage from './components/dashboard/beginner/profile/profile_new';
 
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
+import RatingPage from './components/dashboard/beginner/rate/rate_user';
+
 
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
 
@@ -159,6 +161,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="amateur">
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/rate"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <RatingPage />
             </ProtectedRoute>
           }
         />
