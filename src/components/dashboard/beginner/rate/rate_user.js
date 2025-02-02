@@ -87,40 +87,75 @@ const RatingPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Form validation
     if (!selectedProfessional) {
       setErrorMessage('Please select a professional to rate');
       return;
     }
 
+    if (!rating) {
+      setErrorMessage('Please select a rating');
+      return;
+    }
+
+    if (!selectedDomain) {
+      setErrorMessage('Please select a domain');
+      return;
+    }
+
+    if (!selectedSubdomain) {
+      setErrorMessage('Please select a subdomain');
+      return;
+    }
+
     try {
-      await axiosInstance.post('/ratings/', {
+      const ratingData = {
         professional: selectedProfessional.id,
         rating: rating,
-        comment: comment,
-        experience_details: experience,
+        comment: comment.trim() || 'No comment provided',
+        experience_details: experience.trim() || 'No experience details provided',
         domain: selectedDomain,
         subdomain: selectedSubdomain
-      });
+      };
 
-      setSuccessMessage('Votre évaluation a été enregistrée avec succès!');
+      console.log('Submitting rating data:', ratingData); // Debug log
+
+      const response = await axiosInstance.post('/ratings/', ratingData);
+      console.log('Rating submission response:', response); // Debug log
+
+      setSuccessMessage('Your rating has been submitted successfully!');
       // Reset form
       setRating(0);
       setComment('');
       setExperience('');
+      setSelectedProfessional(null);
+      setSelectedDomain('');
+      setSelectedSubdomain('');
 
-      // Refresh professionals list to update ratings
+      // Refresh professionals list
       const params = new URLSearchParams();
       if (selectedDomain) params.append('domain', selectedDomain);
       if (selectedSubdomain) params.append('subdomain', selectedSubdomain);
-      const response = await axiosInstance.get(`/professionals/?${params.toString()}`);
-      setProfessionals(response.data);
+      const refreshResponse = await axiosInstance.get(`/professionals/?${params.toString()}`);
+      setProfessionals(refreshResponse.data);
 
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Error submitting rating. Please try again.');
-      setTimeout(() => setErrorMessage(''), 3000);
+      console.error('Rating submission error:', error.response?.data || error); // Debug log
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          Object.values(error.response?.data || {}).flat().join(', ') ||
+                          'Error submitting rating. Please try again.';
+      setErrorMessage(errorMessage);
     }
+    
+    setTimeout(() => {
+      setSuccessMessage('');
+      setErrorMessage('');
+    }, 3000);
   };
+
+
 
   if (loading && !professionals.length) {
     return (

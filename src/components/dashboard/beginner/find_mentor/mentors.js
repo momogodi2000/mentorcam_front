@@ -7,6 +7,8 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Slider } from '../../../ui/slider';
 import BeginnerLayout from '../biginner_layout';
+import FindMentorServices from '../../../services/biginner/find_mentor';
+import BookingModal from './BookingModal';
 
 const FindMentors = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +28,11 @@ const FindMentors = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
+  const [mentors, setMentors] = useState([]);
+  const [selectedMentor, setSelectedMentor] = useState(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const categories = [
     { id: 'all', label: { en: 'All Mentors', fr: 'Tous les Mentors' }, icon: User },
@@ -35,59 +42,45 @@ const FindMentors = () => {
     { id: 'education', label: { en: 'Education', fr: 'Éducation' }, icon: Award }
   ];
 
-  const mentors = [
-    {
-      id: 1,
-      name: 'Dr. Kamga Paul',
-      title: { en: 'Senior Software Engineer', fr: 'Ingénieur Logiciel Senior' },
-      expertise: ['React', 'Node.js', 'Python'],
-      location: 'Douala',
-      rating: 4.9,
-      reviews: 128,
-      hourlyRate: 15000,
-      availability: { hours: 20, slots: ['Morning', 'Evening'] },
-      imageUrl: '/api/placeholder/150/150',
-      category: 'tech',
-      badges: ['Top Rated', 'Certified'],
-      languages: ['French', 'English'],
-      description: {
-        en: 'Experienced software engineer with 10+ years in full-stack development',
-        fr: 'Ingénieur logiciel expérimenté avec plus de 10 ans en développement full-stack'
-      },
-      nextAvailable: '2024-01-20T10:00:00',
-      successRate: 98,
-      specializations: ['Web Development', 'Cloud Architecture', 'System Design']
-    },
-    {
-      id: 2,
-      name: 'Mme. Nguemo Sarah',
-      title: { en: 'Digital Marketing Expert', fr: 'Experte en Marketing Digital' },
-      expertise: ['SEO', 'Social Media', 'Content Strategy'],
-      location: 'Yaoundé',
-      rating: 4.8,
-      reviews: 89,
-      hourlyRate: 12000,
-      availability: { hours: 15, slots: ['Afternoon', 'Evening'] },
-      imageUrl: '/api/placeholder/150/150',
-      category: 'business',
-      badges: ['Rising Talent'],
-      languages: ['French', 'English', 'Spanish'],
-      description: {
-        en: 'Digital marketing specialist focused on growth strategies',
-        fr: 'Spécialiste du marketing digital axée sur les stratégies de croissance'
-      },
-      nextAvailable: '2024-01-19T14:00:00',
-      successRate: 95,
-      specializations: ['Growth Marketing', 'Brand Strategy', 'Analytics']
-    }
-  ];
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchMentors = async () => {
+      try {
+        setLoading(true);
+        const response = await FindMentorServices.searchMentors({
+          domain: activeTab === 'all' ? '' : activeTab,
+          searchQuery,
+        });
+        
+        if (response.results) {
+          const transformedMentors = response.results.map(mentor => ({
+            id: mentor.id,
+            name: mentor.full_name,
+            title: mentor.title,
+            expertise: mentor.subdomains || [],
+            location: mentor.location,
+            rating: mentor.average_rating || 4.5,
+            reviews: mentor.total_reviews || 0,
+            hourlyRate: mentor.plan_price || 15000,
+            availability: { hours: 20, slots: ['Morning', 'Evening'] },
+            imageUrl: mentor.profile_picture || '/api/placeholder/150/150',
+            category: mentor.domain_name.toLowerCase(),
+            badges: mentor.certification_name ? ['Certified'] : [],
+            languages: ['French', 'English'],
+            description: mentor.biography || '',
+            successRate: 95
+          }));
+          setMentors(transformedMentors);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setIsLoading(false);
+      }
+    };
+
+    fetchMentors();
+  }, [searchQuery, activeTab, selectedFilters]);
 
   const filteredMentors = useMemo(() => {
     return mentors.filter(mentor => {
@@ -122,8 +115,26 @@ const FindMentors = () => {
     });
   }, [mentors, searchQuery, activeTab, selectedFilters, sortBy]);
 
+  const handleBookSession = (mentor) => {
+    setSelectedMentor(mentor);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingComplete = async () => {
+    setIsBookingModalOpen(false);
+    setSelectedMentor(null);
+  };
+
+  const toggleFavorite = (mentorId) => {
+    setFavoritesList(prev => 
+      prev.includes(mentorId) 
+        ? prev.filter(id => id !== mentorId)
+        : [...prev, mentorId]
+    );
+  };
+
   const MentorCard = ({ mentor }) => {
-    const nextAvailableDate = new Date(mentor.nextAvailable);
+    const nextAvailableDate = new Date(mentor.nextAvailable || new Date());
     const formattedDate = new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'fr-FR', {
       dateStyle: 'medium',
       timeStyle: 'short'
@@ -173,7 +184,9 @@ const FindMentors = () => {
                     ))}
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {isEnglish ? mentor.title.en : mentor.title.fr}
+                    {typeof mentor.title === 'object' ? 
+                      (isEnglish ? mentor.title.en : mentor.title.fr) : 
+                      mentor.title}
                   </p>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -188,7 +201,9 @@ const FindMentors = () => {
               </div>
 
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                {isEnglish ? mentor.description.en : mentor.description.fr}
+                {typeof mentor.description === 'object' ? 
+                  (isEnglish ? mentor.description.en : mentor.description.fr) : 
+                  mentor.description}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -242,7 +257,7 @@ const FindMentors = () => {
                 <Button
                   variant="default"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => handleBookSession(mentor.id)}
+                  onClick={() => handleBookSession(mentor)}
                 >
                   {isEnglish ? 'Book Session' : 'Réserver'}
                 </Button>
@@ -261,7 +276,6 @@ const FindMentors = () => {
       </h3>
       
       <div className="space-y-6">
-        {/* Price Range Slider */}
         <div>
           <h4 className="text-sm font-medium mb-2">
             {isEnglish ? 'Price Range (FCFA)' : 'Fourchette de Prix (FCFA)'}
@@ -279,29 +293,13 @@ const FindMentors = () => {
             <span>{selectedFilters.priceRange[1]} FCFA</span>
           </div>
         </div>
-
-        {/* Other filters... */}
       </div>
     </div>
   );
 
-  const handleBookSession = (mentorId) => {
-    // Implement booking logic
-    console.log(`Booking session with mentor ${mentorId}`);
-  };
-
-  const toggleFavorite = (mentorId) => {
-    setFavoritesList(prev => 
-      prev.includes(mentorId) 
-        ? prev.filter(id => id !== mentorId)
-        : [...prev, mentorId]
-    );
-  };
-
   return (
     <BeginnerLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isEnglish={isEnglish} setIsEnglish={setIsEnglish}>
       <div className="container mx-auto">
-        {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             {isEnglish ? 'Find Your Perfect Mentor' : 'Trouvez Votre Mentor Idéal'}
@@ -314,7 +312,6 @@ const FindMentors = () => {
           </p>
         </div>
 
-        {/* Search and Sort Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -323,15 +320,13 @@ const FindMentors = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isEnglish ? "Search mentors by name, skills, or location..." : "Rechercher des mentors par nom, compétences ou lieu..."}
-
-
               className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
           <div className="flex items-center space-x-4">
             <select
-              value={sortBy}
+            value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
             >
@@ -362,7 +357,6 @@ const FindMentors = () => {
           </div>
         </div>
 
-        {/* Categories */}
         <div className="flex overflow-x-auto space-x-4 mb-6 pb-2 scrollbar-hide">
           {categories.map((category) => {
             const CategoryIcon = category.icon;
@@ -383,16 +377,24 @@ const FindMentors = () => {
           })}
         </div>
 
-        {/* Main Content */}
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Filters Sidebar */}
           <div className="md:w-64 flex-shrink-0">
             <FilterSection />
           </div>
 
-          {/* Mentors Grid/List */}
           <div className="flex-1">
-            {filteredMentors.length === 0 ? (
+            {error && (
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : filteredMentors.length === 0 ? (
               <Alert>
                 <AlertTitle>
                   {isEnglish ? 'No mentors found' : 'Aucun mentor trouvé'}
@@ -418,7 +420,6 @@ const FindMentors = () => {
               </div>
             )}
 
-            {/* Pagination */}
             <div className="mt-8 flex justify-center">
               <nav className="flex items-center space-x-2">
                 <Button
@@ -452,7 +453,6 @@ const FindMentors = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
@@ -501,6 +501,13 @@ const FindMentors = () => {
           </Card>
         </div>
       </div>
+
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        mentor={selectedMentor}
+        onBookingComplete={handleBookingComplete}
+      />
     </BeginnerLayout>
   );
 };
