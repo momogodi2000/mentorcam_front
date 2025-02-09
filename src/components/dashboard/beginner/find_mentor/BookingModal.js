@@ -7,9 +7,15 @@ import { Alert, AlertTitle, AlertDescription } from '../../../ui/alert';
 import { Badge } from '../../../ui/badge';
 import FindMentorServices from '../../../services/biginner/find_mentor';
 
-const BookingModal = ({ isOpen, onClose, mentor, onBookingComplete }) => {
+const BookingModal = ({ 
+  isOpen, 
+  onClose, 
+  mentor, 
+  onBookingComplete,
+  userName // New prop for user's name
+}) => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(userName || ''); // Initialize with userName if provided
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('initial'); // initial, processing, success, error
@@ -52,18 +58,23 @@ const BookingModal = ({ isOpen, onClose, mentor, onBookingComplete }) => {
       const paymentResult = await FindMentorServices.simulatePayment({
         amount: mentor.plan_price || mentor.hourly_rate,
         phoneNumber,
-        mentorId: mentor.id
+        mentorId: mentor.id,
+        userName: name, // Include user name in payment
+        mentorName: mentor.full_name // Include mentor name in payment
       });
 
       if (paymentResult.success) {
-        // Submit booking and decrease available slots
+        // Submit booking with additional user and mentor details
         await FindMentorServices.submitBooking({
           mentorId: mentor.id,
+          mentorName: mentor.full_name,
           studentName: name,
           phoneNumber,
           amount: mentor.plan_price || mentor.hourly_rate,
           transactionId: paymentResult.transactionId,
-          planType: mentor.plan_type
+          planType: mentor.plan_type,
+          domain: mentor.domain_name,
+          subdomains: mentor.subdomains
         });
 
         // Update remaining slots
@@ -102,6 +113,10 @@ const BookingModal = ({ isOpen, onClose, mentor, onBookingComplete }) => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="font-medium text-sm mb-3">Mentor Details</h4>
             <div className="space-y-2 text-sm">
+              <p className="flex items-center justify-between">
+                <span className="text-gray-600">Name:</span>
+                <span>{mentor?.full_name}</span>
+              </p>
               <p className="flex items-center justify-between">
                 <span className="text-gray-600">Location:</span>
                 <span>{mentor?.location || 'Not specified'}</span>
@@ -154,6 +169,7 @@ const BookingModal = ({ isOpen, onClose, mentor, onBookingComplete }) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full"
+                disabled={!!userName} // Disable if userName is provided
               />
             </div>
 
