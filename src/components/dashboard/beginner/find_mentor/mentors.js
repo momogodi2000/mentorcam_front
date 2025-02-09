@@ -15,8 +15,6 @@ import BeginnerLayout from '../biginner_layout';
 import FindMentorServices from '../../../services/biginner/find_mentor';
 import BookingModal from './BookingModal';
 
-
-
 const DOMAINS = {
   "Software Development": ["Web Development", "Mobile App Development", "Game Development", "DevOps & CI/CD", "Software Testing & QA"],
   "Data Science & Machine Learning": ["Data Analytics", "Machine Learning", "Deep Learning", "Data Visualization", "Natural Language Processing"],
@@ -35,7 +33,6 @@ const DOMAINS = {
   "Music & Performing Arts": ["Music Composition", "Theater Acting", "Film Production", "Dance Choreography", "Instrumental Training"]
 };
 
-
 const FindMentors = () => {
   const [mentors, setMentors] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,12 +42,7 @@ const FindMentors = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [expandedProfile, setExpandedProfile] = useState(null);
-  const [filters, setFilters] = useState({
-    priceRange: [0, 50000],
-    rating: 0,
-    hasVerification: false,
-    experienceLevel: 'all'
-  });
+  const [ratings, setRatings] = useState([]);
 
   useEffect(() => {
     const fetchMentors = async () => {
@@ -61,9 +53,13 @@ const FindMentors = () => {
           searchQuery
         });
 
-        const enrichedMentors = response.results.map(mentor => ({
-          ...mentor,
-          completionScore: calculateProfileCompletion(mentor)
+        const enrichedMentors = await Promise.all(response.results.map(async mentor => {
+          const ratingsResponse = await FindMentorServices.getMentorRatings(mentor.id);
+          return {
+            ...mentor,
+            completionScore: calculateProfileCompletion(mentor),
+            ratings: ratingsResponse
+          };
         }));
 
         setMentors(enrichedMentors);
@@ -188,6 +184,24 @@ const FindMentors = () => {
                         <Globe className="w-4 h-4" />
                         Website
                       </a>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Ratings & Reviews</h4>
+                    {mentor.ratings.length > 0 ? (
+                      mentor.ratings.map((rating, index) => (
+                        <div key={index} className="border p-4 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                            <span className="font-medium">{rating.rating}</span>
+                          </div>
+                          <p className="text-gray-600">{rating.comment}</p>
+                          <p className="text-sm text-gray-500">{rating.experience_details}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-600">No ratings yet.</p>
                     )}
                   </div>
                 </div>
