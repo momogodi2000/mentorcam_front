@@ -15,6 +15,15 @@ class FindMentorServices {
     }
   }
 
+  static async getMentorProfile(mentorId) {
+    try {
+      const response = await axiosInstance.get(`/professional-profile/${mentorId}/`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Error fetching mentor profile');
+    }
+  }
+
   static async getMentorRatings(mentorId) {
     try {
       const response = await axiosInstance.get(`/ratings/`, {
@@ -23,6 +32,17 @@ class FindMentorServices {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Error fetching ratings');
+    }
+  }
+
+  static async getPdfDocument(url) {
+    try {
+      const response = await axiosInstance.get(url, {
+        responseType: 'blob'
+      });
+      return URL.createObjectURL(response.data);
+    } catch (error) {
+      throw new Error('Error fetching PDF document');
     }
   }
 

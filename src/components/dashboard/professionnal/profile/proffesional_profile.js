@@ -142,22 +142,22 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
             max_students: formData.max_students ? parseInt(formData.max_students) : null,
             subdomains: Array.isArray(formData.subdomains) ? formData.subdomains : [],
           };
-
+  
           // Remove empty strings and file fields
-          Object.keys(profileData).forEach(key => {
+          Object.keys(profileData).forEach((key) => {
             if (profileData[key] === '') {
               profileData[key] = null;
             }
           });
           delete profileData.certification_file;
           delete profileData.diploma_file;
-
+  
           console.log('Submitting profile data:', profileData);
-
+  
           // Create profile
           const response = await professionalProfileService.createProfile(profileData);
           console.log('Profile created:', response);
-
+  
           // Handle file uploads if files exist
           if (files.certification_file || files.diploma_file) {
             const formData = new FormData();
@@ -167,15 +167,15 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
             if (files.diploma_file) {
               formData.append('diploma_file', files.diploma_file);
             }
-
+  
             console.log('Uploading files...');
-            await professionalProfileService.uploadFiles(formData);
+            await professionalProfileService.uploadFiles(response.id, formData); // Pass profile ID
           }
-
+  
           navigate('/professional_dashboard');
         } catch (error) {
           console.error('Error submitting form:', error);
-          
+  
           // Handle validation errors from the backend
           if (error.errors) {
             setErrors(error.errors);
@@ -190,8 +190,8 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
       }
     }
   };
-
- const handleFileUpload = (e, field) => {
+  
+  const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (file) {
       setFiles(prev => ({
@@ -200,7 +200,6 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
       }));
     }
   };
-
 
   const renderStepContent = () => {
     switch (step) {
