@@ -54,25 +54,18 @@ class FindMentorServices {
       throw new Error(error.response?.data?.message || 'Error submitting booking');
     }
   }
-
-  static async simulatePayment(paymentData) {
+  
+  static async downloadReceipt(bookingId) {
     try {
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            data: {
-              success: true,
-              transactionId: Math.random().toString(36).substring(7),
-              message: 'Payment processed successfully'
-            }
-          });
-        }, 2000);
-      });
+      const response = await axiosInstance.get(`/bookings/${bookingId}/download_receipt/`);
       return response.data;
     } catch (error) {
-      throw new Error('Payment processing failed');
+      throw new Error('Error downloading receipt');
     }
   }
+  
 }
+
+
 
 export default FindMentorServices;
