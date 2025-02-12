@@ -19,12 +19,21 @@ import SessionsPage from './components/dashboard/beginner/session/new';
 import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
 import AchievementsPage from './components/dashboard/beginner/achievement/gold';
 import ProfilePage from './components/dashboard/beginner/profile/profile_new';
-
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
 import RatingPage from './components/dashboard/beginner/rate/rate_user';
-
-
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
+
+import JobOffers from './components/dashboard/institut/job/job_offers';
+import Events from './components/dashboard/institut/events/events';
+import TalentPool from './components/dashboard/institut/Talent Pool/talents';
+import InstitutePage from './components/dashboard/institut/setting/setting_institute';
+import Rapports from './components/dashboard/institut/Reports/Rapports';
+import Recruitment from './components/dashboard/institut/Recruitment/Recruitment';
+import Mentorship from './components/dashboard/institut/Mentorship/Mentorship';
+
+
+
+
 
 
 import BeginnerLayout from './components/dashboard/beginner/biginner_layout';
@@ -204,6 +213,62 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="institution">
               <InstitutionDashboard stage="institut" />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/job"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <JobOffers />
+            </ProtectedRoute>
+          }
+        />
+           <Route
+          path="/event"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <Events />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/talent"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <TalentPool />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/setting_institute"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <InstitutePage />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/rapport"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <Rapports />
+            </ProtectedRoute>
+          }
+        />
+           <Route
+          path="/Recruitment"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <Recruitment />
+            </ProtectedRoute>
+          }
+        />
+           <Route
+          path="/Mentorship"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <Mentorship />
             </ProtectedRoute>
           }
         />
