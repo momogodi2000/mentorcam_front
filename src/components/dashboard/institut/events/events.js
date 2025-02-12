@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Search, Filter, Plus, MapPin, Clock, Users, ChevronRight, 
   Calendar as CalendarIcon, Video, Star, Share2, BookOpen, ArrowUpRight,
-  Tag, CheckCircle, AlertCircle
+  Tag, CheckCircle, AlertCircle, X
 } from 'lucide-react';
 import InstitutionLayout from '../institut_layout';
+import EventsService from '../../../services/institute/events_services';
 
 const EventCard = ({ event, isEnglish }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [tags, setTags] = useState(event.tags);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -22,6 +25,25 @@ const EventCard = ({ event, isEnglish }) => {
     }
   };
 
+  const handleRegister = async () => {
+    try {
+      await EventsService.registerForEvent(event.id);
+      setIsRegistered(true);
+      // Optionally, you can refresh the event data to update the attendees count
+    } catch (error) {
+      console.error('Error registering for event:', error);
+    }
+  };
+
+  const handleAddTag = async (tagName) => {
+    try {
+      const newTag = await EventsService.addTagToEvent(event.id, tagName);
+      setTags([...tags, newTag]);
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
   return (
     <div
       className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] overflow-hidden"
@@ -30,7 +52,7 @@ const EventCard = ({ event, isEnglish }) => {
     >
       <div className="relative h-48 overflow-hidden">
         <img 
-          src="/api/placeholder/800/400" 
+          src={event.image || "/api/placeholder/800/400"} 
           alt={event.title}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
         />
@@ -49,7 +71,7 @@ const EventCard = ({ event, isEnglish }) => {
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{event.title}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{event.description}</p>
           </div>
-          {event.isFeatured && (
+          {event.is_featured && (
             <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
           )}
         </div>
@@ -61,13 +83,13 @@ const EventCard = ({ event, isEnglish }) => {
           </div>
           <div className="flex items-center text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2" />
-            <span className="text-sm">{event.date}</span>
+            <span className="text-sm">{new Date(event.date).toLocaleString()}</span>
           </div>
           <div className="flex items-center text-gray-600 dark:text-gray-400">
             <Users className="w-4 h-4 mr-2" />
-            <span className="text-sm">{event.attendees} {isEnglish ? 'attendees' : 'participants'}</span>
+            <span className="text-sm">{event.attendees_count} {isEnglish ? 'attendees' : 'participants'}</span>
           </div>
-          {event.isVirtual && (
+          {event.is_virtual && (
             <div className="flex items-center text-blue-600 dark:text-blue-400">
               <Video className="w-4 h-4 mr-2" />
               <span className="text-sm">{isEnglish ? 'Virtual Event' : 'Événement virtuel'}</span>
@@ -76,12 +98,12 @@ const EventCard = ({ event, isEnglish }) => {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {event.tags.map((tag, index) => (
+          {tags.map((tag, index) => (
             <span
               key={index}
               className="px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
             >
-              {tag}
+              {tag.name}
             </span>
           ))}
         </div>
@@ -95,12 +117,32 @@ const EventCard = ({ event, isEnglish }) => {
               />
             ))}
           </div>
-          <button className="flex items-center text-blue-600 dark:text-blue-400 hover:underline">
-            <span className="mr-1">{isEnglish ? 'View Details' : 'Voir les détails'}</span>
-            <ArrowUpRight className={`w-4 h-4 transition-all duration-300 ${
-              isHovered ? 'transform translate-x-1 -translate-y-1' : ''
-            }`} />
-          </button>
+          <div className="flex space-x-2">
+            <button 
+              onClick={handleRegister}
+              disabled={isRegistered}
+              className={`flex items-center text-blue-600 dark:text-blue-400 hover:underline ${
+                isRegistered ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <span className="mr-1">{isRegistered ? (isEnglish ? 'Registered' : 'Inscrit') : (isEnglish ? 'Register' : 'S\'inscrire')}</span>
+              <ArrowUpRight className={`w-4 h-4 transition-all duration-300 ${
+                isHovered ? 'transform translate-x-1 -translate-y-1' : ''
+              }`} />
+            </button>
+            <button 
+              onClick={() => {
+                const tagName = prompt(isEnglish ? 'Enter a tag name:' : 'Entrez un nom d\'étiquette:');
+                if (tagName) {
+                  handleAddTag(tagName);
+                }
+              }}
+              className="flex items-center text-green-600 dark:text-green-400 hover:underline"
+            >
+              <span className="mr-1">{isEnglish ? 'Add Tag' : 'Ajouter une étiquette'}</span>
+              <Tag className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -132,49 +174,354 @@ const StatCard = ({ icon: Icon, label, value, trend }) => (
   </div>
 );
 
+const CreateEventModal = ({ isOpen, onClose, isEnglish }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'upcoming',
+    location: '',
+    date: '',
+    attendees_count: 0,
+    max_attendees: 100, // Add default value
+    is_virtual: false,
+    is_featured: false,
+    image: null,
+    tags: [],
+    registration_deadline: '' // Add registration deadline
+  });
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, image: file });
+      setPreviewImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!formData.title || !formData.description || !formData.date || !formData.location) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('status', formData.status);
+      formDataToSend.append('location', formData.location);
+      formDataToSend.append('date', formData.date);
+      formDataToSend.append('attendees_count', formData.attendees_count);
+      formDataToSend.append('max_attendees', formData.max_attendees);
+      formDataToSend.append('is_virtual', formData.is_virtual);
+      formDataToSend.append('is_featured', formData.is_featured);
+      formDataToSend.append('image', formData.image);
+      formDataToSend.append('tags', formData.tags.join(', '));
+      formDataToSend.append('registration_deadline', formData.registration_deadline);
+
+      await EventsService.createEvent(formDataToSend);
+      onClose();
+      // Optionally trigger a refresh of the events list
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      setError(error.response?.data?.message || error.message || 'Error creating event');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {isEnglish ? 'Create Event' : 'Créer un événement'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Title' : 'Titre'}
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Description' : 'Description'}
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Status' : 'Statut'}
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              >
+                <option value="upcoming">{isEnglish ? 'Upcoming' : 'À venir'}</option>
+                <option value="ongoing">{isEnglish ? 'Ongoing' : 'En cours'}</option>
+                <option value="ended">{isEnglish ? 'Ended' : 'Terminé'}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Location' : 'Lieu'}
+              </label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Date' : 'Date'}
+              </label>
+              <input
+                type="datetime-local"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Attendees Count' : 'Nombre de participants'}
+              </label>
+              <input
+                type="number"
+                name="attendees_count"
+                value={formData.attendees_count}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Maximum Attendees' : 'Nombre maximum de participants'}
+              </label>
+              <input
+                type="number"
+                name="max_attendees"
+                value={formData.max_attendees}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Registration Deadline' : 'Date limite d\'inscription'}
+              </label>
+              <input
+                type="datetime-local"
+                name="registration_deadline"
+                value={formData.registration_deadline}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+              />
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="is_virtual"
+                checked={formData.is_virtual}
+                onChange={handleChange}
+                className="rounded border-gray-200 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
+              />
+              <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Virtual Event' : 'Événement virtuel'}
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="is_featured"
+                checked={formData.is_featured}
+                onChange={handleChange}
+                className="rounded border-gray-200 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
+              />
+              <label className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Featured Event' : 'Événement en vedette'}
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Event Image' : 'Image de l\'événement'}
+              </label>
+              <input
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+              />
+              {previewImage && (
+                <div className="mt-2">
+                  <img
+                    src={previewImage}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isEnglish ? 'Tags' : 'Étiquettes'}
+              </label>
+              <input
+                type="text"
+                name="tags"
+                value={formData.tags.join(', ')}
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(', ') })}
+                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              disabled={loading}
+            >
+              {isEnglish ? 'Cancel' : 'Annuler'}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? (isEnglish ? 'Creating...' : 'Création...') : (isEnglish ? 'Create Event' : 'Créer un événement')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const Events = () => {
   const [isEnglish] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [view, setView] = useState('grid');
+  const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState({
+    total_events: 0,
+    total_attendees: 0,
+    virtual_events: 0,
+    completed_events: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const events = [
-    {
-      id: 1,
-      title: 'Tech Innovation Summit 2025',
-      description: 'Join us for a day of innovation, learning, and networking with industry leaders in technology.',
-      status: 'upcoming',
-      location: 'Douala Convention Center',
-      date: 'Mar 15, 2025 - 9:00 AM',
-      attendees: 250,
-      isVirtual: true,
-      isFeatured: true,
-      tags: ['Technology', 'Innovation', 'Networking']
-    },
-    {
-      id: 2,
-      title: 'Digital Marketing Masterclass',
-      description: 'Learn advanced digital marketing strategies from industry experts.',
-      status: 'ongoing',
-      location: 'Yaoundé Business Hub',
-      date: 'Mar 10-12, 2025',
-      attendees: 120,
-      isVirtual: false,
-      isFeatured: false,
-      tags: ['Marketing', 'Digital', 'Business']
-    },
-    {
-      id: 3,
-      title: 'Startup Pitch Competition',
-      description: 'Present your innovative ideas to potential investors and win funding.',
-      status: 'upcoming',
-      location: 'Virtual Event',
-      date: 'Mar 20, 2025 - 2:00 PM',
-      attendees: 180,
-      isVirtual: true,
-      isFeatured: true,
-      tags: ['Startup', 'Pitch', 'Investment']
+  useEffect(() => {
+    fetchStats();
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedFilter, searchQuery]);
+
+  const fetchStats = async () => {
+    try {
+      const response = await EventsService.getEventStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
     }
-  ];
+  };
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      let response;
+      const filters = {};
+
+      if (searchQuery) {
+        filters.search = searchQuery;
+      }
+
+      switch (selectedFilter) {
+        case 'upcoming':
+          response = await EventsService.getUpcomingEvents();
+          break;
+        case 'ongoing':
+          response = await EventsService.getOngoingEvents();
+          break;
+        case 'virtual':
+          response = await EventsService.getVirtualEvents();
+          break;
+        case 'featured':
+          response = await EventsService.getFeaturedEvents();
+          break;
+        default:
+          response = await EventsService.getAllEvents(filters);
+      }
+      setEvents(response.data.results || response.data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
 
   const filters = [
     { id: 'all', label: isEnglish ? 'All Events' : 'Tous les événements' },
@@ -197,7 +544,10 @@ const Events = () => {
               {isEnglish ? 'Create and manage your professional events' : 'Créez et gérez vos événements professionnels'}
             </p>
           </div>
-          <button className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300"
+          >
             <Plus className="w-5 h-5 mr-2" />
             {isEnglish ? 'Create Event' : 'Créer un événement'}
           </button>
@@ -208,25 +558,25 @@ const Events = () => {
           <StatCard 
             icon={CalendarIcon}
             label={isEnglish ? "Total Events" : "Total des événements"}
-            value="24"
+            value={stats.total_events}
             trend={12}
           />
           <StatCard 
             icon={Users}
             label={isEnglish ? "Total Attendees" : "Total des participants"}
-            value="1,234"
+            value={stats.total_attendees}
             trend={8}
           />
           <StatCard 
             icon={Video}
             label={isEnglish ? "Virtual Events" : "Événements virtuels"}
-            value="8"
+            value={stats.virtual_events}
             trend={15}
           />
           <StatCard 
             icon={CheckCircle}
             label={isEnglish ? "Completed Events" : "Événements terminés"}
-            value="16"
+            value={stats.completed_events}
             trend={5}
           />
         </div>
@@ -237,6 +587,8 @@ const Events = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={handleSearch}
               placeholder={isEnglish ? "Search events..." : "Rechercher des événements..."}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -260,11 +612,24 @@ const Events = () => {
 
         {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} isEnglish={isEnglish} />
-          ))}
+          {loading ? (
+            <div className="col-span-full text-center py-8">Loading...</div>
+          ) : events.length === 0 ? (
+            <div className="col-span-full text-center py-8">No events found</div>
+          ) : (
+            events.map((event) => (
+              <EventCard key={event.id} event={event} isEnglish={isEnglish} />
+            ))
+          )}
         </div>
       </div>
+
+      {/* Create Event Modal */}
+      <CreateEventModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        isEnglish={isEnglish}
+      />
     </InstitutionLayout>
   );
 };
