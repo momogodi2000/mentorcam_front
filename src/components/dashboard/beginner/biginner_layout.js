@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Globe, Users, BookOpen, Calendar, Search, Bell, Menu, X, BookOpenCheck, MessageSquare, Star, Award, User, LogOut, Home } from 'lucide-react';
+import { Sun, Moon, Globe, Users, BookOpen, Calendar, Search, Bell, Menu, X, BookOpenCheck, MessageSquare, Star, Award, User, LogOut, Home, Briefcase, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../authService';
 import { getUser } from '../..//services/get_user'; // Import the getUser service
@@ -30,6 +30,8 @@ const BeginnerLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsE
     { icon: Home, label: isEnglish ? 'Dashboard' : 'Tableau de bord', path: '/beginner_dashboard' },
     { icon: BookOpen, label: isEnglish ? 'Learning Path' : 'Parcours d\'apprentissage', path: '/learning' },
     { icon: Users, label: isEnglish ? 'Find Mentors' : 'Trouver des Mentors', path: '/mentors' },
+    { icon: CalendarDays, label: isEnglish ? 'Events' : 'Événements', path: '/find_events' }, // Added Events
+    { icon: Briefcase, label: isEnglish ? 'Job Opportunities' : 'Offres d\'emploi', path: '/job_applicant' }, // Added Job Opportunities
     { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '/sessions' },
     { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/chat' },
     { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/achievements' },

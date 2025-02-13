@@ -14,6 +14,11 @@ import UserListPage from './components/dashboard/admin/user-management/UserListP
 import UserFormPage from './components/dashboard/admin/user-management/UserFormPage';
 
 import LearningPathPage from './components/dashboard/beginner/learning/learning_path';
+import JobApplicant from './components/dashboard/beginner/job_find/job_applicant';
+import FindEvents from './components/dashboard/beginner/event_find/find_events';
+
+
+
 import FindMentors from './components/dashboard/beginner/find_mentor/mentors';
 import SessionsPage from './components/dashboard/beginner/session/new';
 import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
@@ -24,7 +29,6 @@ import RatingPage from './components/dashboard/beginner/rate/rate_user';
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
 
 import JobOffers from './components/dashboard/institut/job/job_offers';
-import JobApplicant from './components/dashboard/institut/job/job_applicant';
 import Events from './components/dashboard/institut/events/events';
 import TalentPool from './components/dashboard/institut/Talent Pool/talents';
 import InstitutePage from './components/dashboard/institut/setting/setting_institute';
@@ -182,6 +186,22 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+          <Route
+          path="/job_applicant"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <JobApplicant />
+            </ProtectedRoute>
+          }
+        />
+           <Route
+          path="/find_events"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <FindEvents />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Professional routes */}
         <Route
@@ -270,14 +290,6 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="institution">
               <Mentorship />
-            </ProtectedRoute>
-          }
-        />
-          <Route
-          path="/job_applicant"
-          element={
-            <ProtectedRoute requiredRole="institution">
-              <JobApplicant />
             </ProtectedRoute>
           }
         />

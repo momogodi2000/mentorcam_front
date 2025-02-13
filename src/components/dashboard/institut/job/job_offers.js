@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Briefcase, MapPin, Clock, Users, ArrowUpRight, X, DollarSign, Calendar, Building } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../ui/dialog_2';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import InstitutionLayout from '../institut_layout';
 import { motion, AnimatePresence } from 'framer-motion';
+import JobService from '../../../services/institute/job_services';
 
-// JobCard Component
+// JobCard Component remains the same
 const JobCard = ({ job, isEnglish, onSelect }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -78,8 +79,8 @@ const JobCard = ({ job, isEnglish, onSelect }) => {
   );
 };
 
-// NewJobModal Component
-const NewJobModal = ({ isOpen, onClose, isEnglish }) => {
+// Updated NewJobModal Component with API integration
+const NewJobModal = ({ isOpen, onClose, isEnglish, onJobCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     company: '',
@@ -90,11 +91,22 @@ const NewJobModal = ({ isOpen, onClose, isEnglish }) => {
     requirements: '',
     skills: []
   });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
-    onClose();
+    setError(null);
+    setLoading(true);
+    try {
+      await JobService.createJob(formData);
+      onJobCreated();
+      onClose();
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error creating job offer');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -191,62 +203,90 @@ const NewJobModal = ({ isOpen, onClose, isEnglish }) => {
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              disabled={loading}
             >
-              {isEnglish ? 'Post Job' : 'Publier l\'offre'}
+              {loading ? (isEnglish ? 'Posting...' : 'Publication...') : (isEnglish ? 'Post Job' : 'Publier l\'offre')}
             </button>
           </div>
+          {error && (
+            <Alert className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </form>
       </DialogContent>
     </Dialog>
   );
 };
 
-// Main JobOffers Component
+// Updated Main JobOffers Component with API integration
 const JobOffers = () => {
   const [isEnglish] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const jobOffers = [
-    {
-      id: 1,
-      title: 'Senior Software Engineer',
-      company: 'TechCorp',
-      type: 'Full-time',
-      location: 'Douala, Cameroon',
-      postedDate: '2 days ago',
-      applicants: 45,
-      salary: '1,500,000 - 2,500,000 FCFA',
-      skills: ['React', 'Node.js', 'PostgreSQL'],
-      description: 'We are looking for a Senior Software Engineer to join our team...'
-    },
-    {
-      id: 2,
-      title: 'UI/UX Designer',
-      company: 'DigitalCraft',
-      type: 'Contract',
-      location: 'Yaoundé, Cameroon',
-      postedDate: '1 week ago',
-      applicants: 28,
-      salary: '800,000 - 1,200,000 FCFA',
-      skills: ['Figma', 'UI/UX', 'Adobe XD'],
-      description: 'Join our creative team as a UI/UX Designer...'
-    },
-    {
-      id: 3,
-      title: 'Product Manager',
-      company: 'InnovateHub',
-      type: 'Remote',
-      location: 'Remote',
-      postedDate: '3 days ago',
-      applicants: 56,
-      salary: '2,000,000 - 3,000,000 FCFA',
-      skills: ['Agile', 'Scrum', 'Product Strategy'],
-      description: 'Looking for an experienced Product Manager to lead our team...'
+  const fetchJobs = async (filters = {}) => {
+    try {
+      setLoading(true);
+      const data = await JobService.getAllJobs(filters);
+      setJobs(data);
+      setError(null);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error fetching jobs');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const handleSearch = async () => {
+    if (searchQuery.trim()) {
+      try {
+        const results = await JobService.searchJobs(searchQuery);
+        setJobs(results);
+      } catch (error) {
+        setError('Error searching jobs');
+      }
+    } else {
+      fetchJobs();
+    }
+  };
+
+  useEffect(() => {
+    const debounceSearch = setTimeout(() => {
+      handleSearch();
+    }, 500);
+
+    return () => clearTimeout(debounceSearch);
+  }, [searchQuery]);
+
+  const handleJobSelect = async (jobId) => {
+    try {
+      const jobDetails = await JobService.getJobById(jobId);
+      setSelectedJob(jobDetails);
+    } catch (error) {
+      setError('Error fetching job details');
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (window.confirm(isEnglish ? 'Are you sure you want to delete this job?' : 'Êtes-vous sûr de vouloir supprimer cette offre ?')) {
+      try {
+        await JobService.deleteJob(jobId);
+        fetchJobs();
+      } catch (error) {
+        setError('Error deleting job');
+      }
+    }
+  };
 
   const filters = [
     { id: 'all', label: isEnglish ? 'All Jobs' : 'Tous les emplois' },
@@ -255,18 +295,31 @@ const JobOffers = () => {
     { id: 'remote', label: isEnglish ? 'Remote' : 'Télétravail' }
   ];
 
-  const filteredJobs = jobOffers.filter(job => {
+  const filteredJobs = jobs.filter(job => {
     const matchesFilter = selectedFilter === 'all' || 
       job.type.toLowerCase().includes(selectedFilter.toLowerCase());
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesFilter;
   });
+
+  if (loading) {
+    return (
+      <InstitutionLayout isEnglish={isEnglish}>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </InstitutionLayout>
+    );
+  }
 
   return (
     <InstitutionLayout isEnglish={isEnglish}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {error && (
+          <Alert className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -355,7 +408,7 @@ const JobOffers = () => {
                     key={job.id} 
                     job={job} 
                     isEnglish={isEnglish}
-                    onSelect={(job) => setSelectedJob(job)}
+                    onSelect={(job) => handleJobSelect(job.id)}
                   />
                 ))}
               </AnimatePresence>
@@ -431,10 +484,12 @@ const JobOffers = () => {
                     {isEnglish ? 'View Applicants' : 'Voir les candidats'}
                   </button>
                   
+                  {/* Delete Job Button */}
                   <button
-                    className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                    onClick={() => handleDeleteJob(selectedJob.id)}
+                    className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
                   >
-                    {isEnglish ? 'Apply Now' : 'Postuler maintenant'}
+                    {isEnglish ? 'Delete Job' : 'Supprimer l\'offre'}
                   </button>
                 </div>
               </>
@@ -447,6 +502,7 @@ const JobOffers = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           isEnglish={isEnglish} 
+          onJobCreated={() => fetchJobs()}
         />
       </div>
     </InstitutionLayout>
