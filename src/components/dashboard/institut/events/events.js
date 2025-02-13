@@ -182,13 +182,13 @@ const CreateEventModal = ({ isOpen, onClose, isEnglish }) => {
     location: '',
     date: '',
     attendees_count: 0,
-    max_attendees: 100, // Add default value
+    max_attendees: 100,
     is_virtual: false,
     is_featured: false,
     image: null,
-    tags: [],
-    registration_deadline: '' // Add registration deadline
-  });
+    tags: [], // Initialize as an empty array
+    registration_deadline: ''
+});
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -216,35 +216,47 @@ const CreateEventModal = ({ isOpen, onClose, isEnglish }) => {
     setLoading(true);
 
     try {
-      if (!formData.title || !formData.description || !formData.date || !formData.location) {
-        throw new Error('Please fill in all required fields');
-      }
+        // Format the date strings properly
+        const localDateTime = new Date(formData.date);
+        const utcDateTime = localDateTime.toISOString();
 
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('status', formData.status);
-      formDataToSend.append('location', formData.location);
-      formDataToSend.append('date', formData.date);
-      formDataToSend.append('attendees_count', formData.attendees_count);
-      formDataToSend.append('max_attendees', formData.max_attendees);
-      formDataToSend.append('is_virtual', formData.is_virtual);
-      formDataToSend.append('is_featured', formData.is_featured);
-      formDataToSend.append('image', formData.image);
-      formDataToSend.append('tags', formData.tags.join(', '));
-      formDataToSend.append('registration_deadline', formData.registration_deadline);
+        let registrationDeadline = null;
+        if (formData.registration_deadline) {
+            const localDeadline = new Date(formData.registration_deadline);
+            registrationDeadline = localDeadline.toISOString();
+        }
 
-      await EventsService.createEvent(formDataToSend);
-      onClose();
-      // Optionally trigger a refresh of the events list
-      window.location.reload();
+        // Prepare the event data
+        const eventDataToSubmit = {
+            title: formData.title,
+            description: formData.description,
+            status: formData.status,
+            location: formData.location,
+            date: utcDateTime,
+            registration_deadline: registrationDeadline,
+            attendees_count: parseInt(formData.attendees_count) || 0,
+            max_attendees: parseInt(formData.max_attendees) || 0,
+            is_virtual: Boolean(formData.is_virtual),
+            is_featured: Boolean(formData.is_featured),
+            image: formData.image,
+            tags: formData.tags || []
+        };
+
+        // Log the data being sent
+        console.log('Submitting event data:', eventDataToSubmit);
+
+        const response = await EventsService.createEvent(eventDataToSubmit);
+        console.log('Success response:', response);
+        
+        onClose();
+        window.location.reload();
     } catch (error) {
-      console.error('Error creating event:', error);
-      setError(error.response?.data?.message || error.message || 'Error creating event');
+        console.error('Submission error:', error);
+        setError(error.response?.data?.message || error.message || 'Error creating event');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   if (!isOpen) return null;
 
@@ -416,18 +428,30 @@ const CreateEventModal = ({ isOpen, onClose, isEnglish }) => {
                 </div>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {isEnglish ? 'Tags' : 'Étiquettes'}
-              </label>
-              <input
-                type="text"
-                name="tags"
-                value={formData.tags.join(', ')}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(', ') })}
-                className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
-              />
-            </div>
+                <div>
+                  {/*
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {isEnglish ? 'Tags' : 'Étiquettes'}
+    </label>
+    <input
+        type="text"
+        value={formData.tags.join(', ')}
+        onChange={(e) => {
+            const tagsText = e.target.value;
+            const tagsArray = tagsText
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag !== '');
+            setFormData(prev => ({
+                ...prev,
+                tags: tagsArray
+            }));
+        }}
+        className="mt-1 block w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white p-2"
+        placeholder={isEnglish ? "Enter tags separated by commas" : "Entrez les étiquettes séparées par des virgules"}
+    />
+*/}
+              </div>
           </div>
           <div className="mt-6 flex justify-end space-x-4">
             <button

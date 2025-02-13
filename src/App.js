@@ -24,6 +24,7 @@ import RatingPage from './components/dashboard/beginner/rate/rate_user';
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
 
 import JobOffers from './components/dashboard/institut/job/job_offers';
+import JobApplicant from './components/dashboard/institut/job/job_applicant';
 import Events from './components/dashboard/institut/events/events';
 import TalentPool from './components/dashboard/institut/Talent Pool/talents';
 import InstitutePage from './components/dashboard/institut/setting/setting_institute';
@@ -269,6 +270,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="institution">
               <Mentorship />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/job_applicant"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <JobApplicant />
             </ProtectedRoute>
           }
         />

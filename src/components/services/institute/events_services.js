@@ -15,47 +15,64 @@ class EventsService {
     }
 
     static async createEvent(eventData) {
+        // Create a new FormData instance
         const formData = new FormData();
         
-        // Convert date to ISO string format
-        if (eventData.date) {
-            formData.append('date', new Date(eventData.date).toISOString());
+        try {
+            // Required fields - ensure they exist
+            if (!eventData.title || !eventData.description || !eventData.status || !eventData.location || !eventData.date) {
+                throw new Error('Missing required fields');
+            }
+
+            // Basic fields
+            formData.append('title', eventData.title);
+            formData.append('description', eventData.description);
+            formData.append('status', eventData.status);
+            formData.append('location', eventData.location);
+
+            // Date fields
+            const formattedDate = new Date(eventData.date).toISOString();
+            formData.append('date', formattedDate);
+
+            if (eventData.registration_deadline) {
+                const formattedDeadline = new Date(eventData.registration_deadline).toISOString();
+                formData.append('registration_deadline', formattedDeadline);
+            }
+
+            // Numeric fields - ensure they're sent as strings
+            formData.append('attendees_count', String(eventData.attendees_count || 0));
+            formData.append('max_attendees', String(eventData.max_attendees || 0));
+
+            // Boolean fields - convert to string 'true' or 'false'
+            formData.append('is_virtual', eventData.is_virtual ? 'true' : 'false');
+            formData.append('is_featured', eventData.is_featured ? 'true' : 'false');
+
+            // Image field - only append if it exists
+            if (eventData.image instanceof File) {
+                formData.append('image', eventData.image);
+            }
+
+            // Tags - convert to tag_ids array
+            if (Array.isArray(eventData.tags) && eventData.tags.length > 0) {
+                formData.append('tag_ids', JSON.stringify(eventData.tags));
+            }
+
+            // Log the FormData entries for debugging
+            for (let pair of formData.entries()) {
+                console.log('FormData entry:', pair[0], pair[1]);
+            }
+
+            const response = await axiosInstance.post('/events/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+
+            return response;
+        } catch (error) {
+            console.error('Error details:', error.response?.data);
+            throw error;
         }
-
-        // Handle registration_deadline
-        if (eventData.registration_deadline) {
-            formData.append('registration_deadline', new Date(eventData.registration_deadline).toISOString());
-        }
-
-        // Convert boolean values to strings
-        formData.append('is_virtual', eventData.is_virtual ? 'true' : 'false');
-        formData.append('is_featured', eventData.is_featured ? 'true' : 'false');
-
-        // Handle image
-        if (eventData.image instanceof File) {
-            formData.append('image', eventData.image);
-        }
-
-        // Handle basic fields
-        formData.append('title', eventData.title);
-        formData.append('description', eventData.description);
-        formData.append('status', eventData.status);
-        formData.append('location', eventData.location);
-        formData.append('attendees_count', eventData.attendees_count || 0);
-        formData.append('max_attendees', eventData.max_attendees || 100); // Add default max attendees
-
-        // Handle tags as a JSON string
-        if (eventData.tags && Array.isArray(eventData.tags)) {
-            formData.append('tag_ids', JSON.stringify(eventData.tags.map(tag => 
-                typeof tag === 'string' ? { name: tag } : tag
-            )));
-        }
-
-        return axiosInstance.post('/events/', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
     }
 
 
