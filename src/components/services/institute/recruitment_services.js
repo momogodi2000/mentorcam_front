@@ -12,9 +12,10 @@ export const eventRegistrationService = {
   },
 
   // Get event attendees with user details
-  getEventAttendees: async (eventId) => {
+ // Update the getEventAttendees method in eventRegistrationService.js
+    getEventAttendees: async (eventId) => {
     try {
-      const response = await backend_connection.get(`/events/${eventId}/attendees/`);
+      const response = await backend_connection.get(`/events/${eventId}/attendees/?include_user_details=true`);
       return response.data;
     } catch (error) {
       throw error;
