@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Sun, Moon, Globe, Users, Calendar, Search, Bell, Menu, X,
     Building, Briefcase, ChartBar, Target, FileText, Settings, 
-    UserCheck, LogOut
+    UserCheck, LogOut, UserPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../authService'; // Import the logout service
@@ -46,6 +46,7 @@ const InstitutionLayout = ({ children, isEnglish, setIsEnglish }) => {
         { icon: Calendar, label: isEnglish ? 'Events' : 'Événements', path: '/event' },
         { icon: UserCheck, label: isEnglish ? 'Mentorship' : 'Mentorat', path: '/Mentorship' },
         { icon: Target, label: isEnglish ? 'Recruitment' : 'Recrutement', path: '/Recruitment' },
+        { icon: UserPlus, label: isEnglish ? 'Job Applicants' : 'Candidats', path: '/job_apply' },
         { icon: FileText, label: isEnglish ? 'Reports' : 'Rapports', path: '/rapport' },
         { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres', path: '/setting_institute' }
     ];

@@ -40,6 +40,7 @@ import InstitutePage from './components/dashboard/institut/setting/setting_insti
 import Rapports from './components/dashboard/institut/Reports/Rapports';
 import Recruitment from './components/dashboard/institut/Recruitment/Recruitment';
 import Mentorship from './components/dashboard/institut/Mentorship/Mentorship';
+import Candidats from './components/dashboard/institut/job/job_apply';
 
 
 
@@ -314,6 +315,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="institution">
               <Mentorship />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/job_apply"
+          element={
+            <ProtectedRoute requiredRole="institution">
+              <Candidats />
             </ProtectedRoute>
           }
         />
