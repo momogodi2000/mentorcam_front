@@ -16,17 +16,22 @@ import UserFormPage from './components/dashboard/admin/user-management/UserFormP
 import LearningPathPage from './components/dashboard/beginner/learning/learning_path';
 import JobApplicant from './components/dashboard/beginner/job_find/job_applicant';
 import FindEvents from './components/dashboard/beginner/event_find/find_events';
-
-
-
 import FindMentors from './components/dashboard/beginner/find_mentor/mentors';
 import SessionsPage from './components/dashboard/beginner/session/new';
 import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
 import AchievementsPage from './components/dashboard/beginner/achievement/gold';
 import ProfilePage from './components/dashboard/beginner/profile/profile_new';
+
+
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
 import RatingPage from './components/dashboard/beginner/rate/rate_user';
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
+import OnlineClasses from './components/dashboard/professionnal/classe/online_classe';
+import Classe from './components/dashboard/professionnal/classe/classe';
+
+
+
+
 
 import JobOffers from './components/dashboard/institut/job/job_offers';
 import Events from './components/dashboard/institut/events/events';
@@ -228,6 +233,25 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+
+        <Route
+          path="/online_classe"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <OnlineClasses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/classe"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <Classe />
+            </ProtectedRoute>
+          }
+        />
+
+
         {/* Institution routes */}
         <Route
           path="/institut_dashboard"

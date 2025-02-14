@@ -40,9 +40,9 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
         { icon: ChartBar, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/professional_dashboard' },
         { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants' },
         { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions' },
-        { icon: Video, label: isEnglish ? 'Online Classes' : 'Cours en Ligne' },
+        { icon: Video, label: isEnglish ? 'Online Classes' : 'Cours en Ligne', path: '/online_classe' },
         { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus' },
-        { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours' },
+        { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours', path: '/classe'  },
         { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages' },
         { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres',path: '/setting' }
     ];
