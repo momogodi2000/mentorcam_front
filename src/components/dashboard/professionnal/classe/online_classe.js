@@ -213,7 +213,6 @@ const OnlineClasses = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish }) =
             </p>
           </div>
           <button
-            onClick={() => navigate('/create-class')}
             className="mt-4 md:mt-0 flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
           >
             <Plus className="w-5 h-5 mr-2" />

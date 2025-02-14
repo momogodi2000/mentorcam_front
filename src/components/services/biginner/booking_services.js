@@ -5,7 +5,7 @@ class BookingService {
   static async submitBooking(bookingData) {
     try {
       const response = await axiosInstance.post('/bookings/', {
-        mentorId: bookingData.mentorId,
+        mentor: bookingData.mentorId,  // Changed mentorId to mentor
         mentorName: bookingData.mentorName,
         studentName: bookingData.studentName,
         studentEmail: bookingData.studentEmail,
