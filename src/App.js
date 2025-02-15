@@ -28,6 +28,7 @@ import RatingPage from './components/dashboard/beginner/rate/rate_user';
 import SettingPage from './components/dashboard/professionnal/setting/professional_setting';
 import OnlineClasses from './components/dashboard/professionnal/classe/online_classe';
 import Classe from './components/dashboard/professionnal/classe/classe';
+import Students from './components/dashboard/professionnal/Students/students';
 
 
 
@@ -248,6 +249,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="professional">
               <Classe />
+            </ProtectedRoute>
+          }
+        />
+           <Route
+          path="/student"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <Students />
             </ProtectedRoute>
           }
         />

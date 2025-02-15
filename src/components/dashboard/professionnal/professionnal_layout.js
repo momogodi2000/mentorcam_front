@@ -38,7 +38,7 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
     const menuItems = [
         { icon: BarChart, label: isEnglish ? 'Complete profile' : 'Finalise le profile', path: '/complete' },
         { icon: ChartBar, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/professional_dashboard' },
-        { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants' },
+        { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants', path: '/student'  },
         { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions' },
         { icon: Video, label: isEnglish ? 'Online Classes' : 'Cours en Ligne', path: '/online_classe' },
         { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus' },
