@@ -36,7 +36,7 @@ import {
 import ProfessionalLayout from '../professionnal_layout';
 import onlineCourseServices from '../../../services/professionnal/online_classe_services';
 import { toast } from 'react-toastify';
-
+import ManageOnlineClass from './management';
 
 const DOMAINS = {
   "Software Development": ["Web Development", "Mobile App Development", "Game Development", "DevOps & CI/CD", "Software Testing & QA"],
@@ -72,7 +72,7 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
 
   const [error, setError] = useState('');
   const [availableSubdomains, setAvailableSubdomains] = useState([]);
-
+ 
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -370,6 +370,9 @@ const OnlineClasses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [managementModalOpen, setManagementModalOpen] = useState(false);
+  const [managementMode, setManagementMode] = useState('edit');
 
   useEffect(() => {
     fetchCourses();
@@ -390,6 +393,24 @@ const OnlineClasses = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditCourse = (course) => {
+    setSelectedCourse(course);
+    setManagementMode('edit');
+    setManagementModalOpen(true);
+  };
+  
+  const handleManageCourse = (course) => {
+    setSelectedCourse(course);
+    setManagementMode('manage');
+    setManagementModalOpen(true);
+  };
+  
+  const handleViewReport = (course) => {
+    setSelectedCourse(course);
+    setManagementMode('report');
+    setManagementModalOpen(true);
   };
 
   const formatDate = (dateString) => {
@@ -441,7 +462,9 @@ const OnlineClasses = () => {
 
   return (
     <ProfessionalLayout isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} isEnglish={isEnglish} setIsEnglish={setIsEnglish}>
+      
       <div className="container mx-auto px-4">
+        {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -471,6 +494,16 @@ const OnlineClasses = () => {
           onCourseCreated={fetchCourses}
         />
 
+                  {/* Add ManageOnlineClass component */}
+        <ManageOnlineClass
+          course={selectedCourse}
+          isOpen={managementModalOpen}
+          onClose={() => setManagementModalOpen(false)}
+          onCourseUpdated={fetchCourses}
+          isEnglish={isEnglish}
+          mode={managementMode}
+        />
+        
         {/* Search and Filter Controls */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="relative">
@@ -495,7 +528,11 @@ const OnlineClasses = () => {
               <SelectItem value="all">
                 {isEnglish ? "All Domains" : "Tous les Domaines"}
               </SelectItem>
-              {/* Add other domain options dynamically */}
+              {Object.keys(DOMAINS).map((domain) => (
+                <SelectItem key={domain} value={domain.toLowerCase()}>
+                  {domain}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           
@@ -624,7 +661,7 @@ const OnlineClasses = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/class/${course.id}/edit`)}
+                        onClick={() => handleEditCourse(course.id)}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         {isEnglish ? 'Edit' : 'Modifier'}
@@ -633,7 +670,7 @@ const OnlineClasses = () => {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => navigate(`/class/${course.id}`)}
+                        onClick={() => handleManageCourse(course.id)}
                       >
                         {isEnglish ? 'Manage' : 'Gérer'}
                         <ChevronRight className="w-4 h-4 ml-1" />
@@ -645,7 +682,6 @@ const OnlineClasses = () => {
             </div>
           )}
         </section>
-
         {/* Past Classes Section */}
         <section>
           <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
