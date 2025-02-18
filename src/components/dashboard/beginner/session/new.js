@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../../ui/card';
 import { Badge } from '../../../ui/badge';
 import { 
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BeginnerLayout from '../biginner_layout';
-
+import CourseSessionService from '../../../services/biginner/session_course_services';
 
 const SessionsPage = ({ isDarkMode, isEnglish }) => {
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -20,182 +20,152 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
     field: 'all'
   });
 
-  const sessions = {
-    upcoming: [
-      {
-        id: 1,
-        mentorName: 'Dr. Kamga Paul',
-        title: isEnglish ? 'Advanced Web Development' : 'Développement Web Avancé',
-        topic: isEnglish ? 'React Hooks and State Management' : 'React Hooks et Gestion d\'État',
-        date: '2024-01-20',
-        time: '14:00',
-        duration: '1h',
-        type: 'video',
-        status: 'confirmed',
-        location: isEnglish ? 'Online' : 'En ligne',
-        field: isEnglish ? 'Web Development' : 'Développement Web',
-        rating: 4.8,
-        price: '15000 XAF',
-        description: isEnglish 
-          ? 'Deep dive into React Hooks, Context API, and state management patterns.'
-          : 'Plongée profonde dans React Hooks, Context API et les modèles de gestion d\'état.',
-        materials: ['React Documentation', 'Code Examples', 'Practice Exercises'],
-        prerequisites: isEnglish 
-          ? 'Basic React knowledge required'
-          : 'Connaissance de base de React requise'
-      },
-      {
-        id: 2,
-        mentorName: 'Mme. Nguemo Sarah',
-        title: isEnglish ? 'Digital Marketing Fundamentals' : 'Fondamentaux du Marketing Digital',
-        topic: isEnglish ? 'Social Media Strategy' : 'Stratégie des Médias Sociaux',
-        date: '2024-01-22',
-        time: '10:00',
-        duration: '1.5h',
-        type: 'in-person',
-        status: 'pending',
-        location: isEnglish ? 'Douala, Akwa' : 'Douala, Akwa',
-        field: isEnglish ? 'Digital Marketing' : 'Marketing Digital',
-        rating: 4.6,
-        price: '20000 XAF',
-        description: isEnglish
-          ? 'Learn effective social media strategies for business growth in the Cameroonian market.'
-          : 'Apprenez des stratégies efficaces des médias sociaux pour la croissance des entreprises au Cameroun.',
-        materials: ['Strategy Template', 'Case Studies'],
-        prerequisites: isEnglish 
-          ? 'No prerequisites required'
-          : 'Aucun prérequis nécessaire'
-      }
-    ],
-    past: [
-      {
-        id: 3,
-        mentorName: 'M. Fotso Jean',
-        title: isEnglish ? 'Mobile App Development' : 'Développement d\'Applications Mobiles',
-        topic: isEnglish ? 'React Native Basics' : 'Bases de React Native',
-        date: '2024-01-15',
-        time: '15:00',
-        duration: '1h',
-        type: 'video',
-        status: 'completed',
-        location: isEnglish ? 'Online' : 'En ligne',
-        field: isEnglish ? 'Mobile Development' : 'Développement Mobile',
-        rating: 4.9,
-        price: '18000 XAF',
-        feedback: isEnglish 
-          ? 'Excellent session! Clear explanations and practical examples.'
-          : 'Excellente session ! Explications claires et exemples pratiques.',
-        recording: 'session-recording-3.mp4',
-        materials: ['Slides', 'Code Repository']
-      }
-    ]
+  const [sessions, setSessions] = useState({ upcoming: [], past: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const data = await CourseSessionService.getSessions(selectedFilter);
+      setSessions(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const SessionCard = ({ session }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="mb-4 hover:shadow-lg transition-shadow">
-        <CardContent className="p-6">
-          <div className="flex flex-col space-y-4">
-            {/* Header Section */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-lg text-gray-900 dark:text-white">
-                    {session.mentorName}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-blue-600 dark:text-blue-400">{session.title}</p>
-                    <div className="flex items-center text-yellow-500">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="ml-1 text-sm">{session.rating}</span>
+  useEffect(() => {
+    fetchSessions();
+  }, [selectedFilter]);
+
+  const handleFilterChange = (filterType, value) => {
+    const newFilter = { ...selectedFilter, [filterType]: value };
+    setSelectedFilter(newFilter);
+    fetchSessions(newFilter);
+  };
+
+  const SessionCard = ({ session }) => {
+    const handleContentAccess = async (sessionId) => {
+      try {
+        const content = await CourseSessionService.getSessionContent(sessionId);
+        console.log(content); // For now, just log the content
+      } catch (err) {
+        console.error(err); // Handle error (e.g., show error message)
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="mb-4 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex flex-col space-y-4">
+              {/* Header Section */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <User className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg text-gray-900 dark:text-white">
+                      {session.mentorName}
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-blue-600 dark:text-blue-400">{session.title}</p>
+                      <div className="flex items-center text-yellow-500">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="ml-1 text-sm">{session.rating}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                
+                <Badge variant={
+                  session.status === 'confirmed' ? 'success' :
+                  session.status === 'pending' ? 'warning' :
+                  'secondary'
+                }>
+                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                </Badge>
               </div>
-              
-              <Badge variant={
-                session.status === 'confirmed' ? 'success' :
-                session.status === 'pending' ? 'warning' :
-                'secondary'
-              }>
-                {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-              </Badge>
+
+              {/* Details Section */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                  <Calendar className="w-4 h-4" />
+                  <span>{session.date}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                  <Clock className="w-4 h-4" />
+                  <span>{session.time} ({session.duration})</span>
+                </div>
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                  <MapPin className="w-4 h-4" />
+                  <span>{session.location}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
+                  <GraduationCap className="w-4 h-4" />
+                  <span>{session.field}</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              {session.description && (
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  {session.description}
+                </p>
+              )}
+
+              {/* Materials & Prerequisites */}
+              {session.materials && (
+                <div className="flex flex-wrap gap-2">
+                  {session.materials.map((material, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {material}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Price and Actions */}
+              <div className="flex items-center justify-between pt-2">
+                <div className="font-semibold text-gray-900 dark:text-white">
+                  {session.price}
+                </div>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => handleContentAccess(session.id)}
+                    className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                  <button className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300">
+                    <MessageSquare className="w-5 h-5" />
+                  </button>
+                  <button className="p-2 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300">
+                    <BookOpen className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Past Session Feedback */}
+              {session.feedback && (
+                <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{session.feedback}</p>
+                </div>
+              )}
             </div>
-
-            {/* Details Section */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
-                <Calendar className="w-4 h-4" />
-                <span>{session.date}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
-                <Clock className="w-4 h-4" />
-                <span>{session.time} ({session.duration})</span>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
-                <MapPin className="w-4 h-4" />
-                <span>{session.location}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
-                <GraduationCap className="w-4 h-4" />
-                <span>{session.field}</span>
-              </div>
-            </div>
-
-            {/* Description */}
-            {session.description && (
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                {session.description}
-              </p>
-            )}
-
-            {/* Materials & Prerequisites */}
-            {session.materials && (
-              <div className="flex flex-wrap gap-2">
-                {session.materials.map((material, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {material}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {/* Price and Actions */}
-            <div className="flex items-center justify-between pt-2">
-              <div className="font-semibold text-gray-900 dark:text-white">
-                {session.price}
-              </div>
-              <div className="flex space-x-2">
-                <button className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300">
-                  <Video className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300">
-                  <MessageSquare className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300">
-                  <BookOpen className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Past Session Feedback */}
-            {session.feedback && (
-              <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-300">{session.feedback}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -235,7 +205,7 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
                   <select 
                     className="w-full p-2 border rounded-lg dark:bg-gray-700"
                     value={selectedFilter.type}
-                    onChange={(e) => setSelectedFilter({...selectedFilter, type: e.target.value})}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
                   >
                     <option value="all">{isEnglish ? 'All Types' : 'Tous les Types'}</option>
                     <option value="video">{isEnglish ? 'Video Call' : 'Appel Vidéo'}</option>
@@ -249,7 +219,7 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
                   <select 
                     className="w-full p-2 border rounded-lg dark:bg-gray-700"
                     value={selectedFilter.field}
-                    onChange={(e) => setSelectedFilter({...selectedFilter, field: e.target.value})}
+                    onChange={(e) => handleFilterChange('field', e.target.value)}
                   >
                     <option value="all">{isEnglish ? 'All Fields' : 'Tous les Domaines'}</option>
                     <option value="web">{isEnglish ? 'Web Development' : 'Développement Web'}</option>
@@ -264,7 +234,7 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
                   <select 
                     className="w-full p-2 border rounded-lg dark:bg-gray-700"
                     value={selectedFilter.date}
-                    onChange={(e) => setSelectedFilter({...selectedFilter, date: e.target.value})}
+                    onChange={(e) => handleFilterChange('date', e.target.value)}
                   >
                     <option value="week">{isEnglish ? 'This Week' : 'Cette Semaine'}</option>
                     <option value="month">{isEnglish ? 'This Month' : 'Ce Mois'}</option>
@@ -278,7 +248,7 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
                   <select 
                     className="w-full p-2 border rounded-lg dark:bg-gray-700"
                     value={selectedFilter.status}
-                    onChange={(e) => setSelectedFilter({...selectedFilter, status: e.target.value})}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
                   >
                     <option value="all">{isEnglish ? 'All Status' : 'Tous les Statuts'}</option>
                     <option value="confirmed">{isEnglish ? 'Confirmed' : 'Confirmé'}</option>
@@ -329,8 +299,8 @@ const SessionsPage = ({ isDarkMode, isEnglish }) => {
           </div>
         </div>
   
-        {/* Empty State */}
-        {sessions[activeTab].length === 0 && (
+         {/* Empty State */}
+         {sessions[activeTab].length === 0 && (
           <div className="text-center py-12">
             <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">
