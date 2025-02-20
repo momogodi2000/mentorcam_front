@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { sessionsService } from '../../../services/biginner/session_course_services';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Video, FileText, Eye, Star, User, Plus } from 'lucide-react';
+import { Calendar, Clock, Video, FileText, Eye, Star, User, Plus, Users, PenTool } from 'lucide-react';
 import { useToast } from '../../../ui/use-toast';
 import {
   Dialog,
@@ -14,17 +14,20 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Textarea } from '../../../ui/textarea';
 import { Skeleton } from '../../../ui/skeleton';
-import BeginnerLayout from '../biginner_layout'; // Import the BeginnerLayout
+import BeginnerLayout from '../biginner_layout';
 
 export default function SessionsPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [showExam, setShowExam] = useState(false);
+  const [examType, setExamType] = useState('');
   const { toast } = useToast();
   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'amateur');
 
-  // State for dark mode and language
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
 
@@ -46,6 +49,43 @@ export default function SessionsPage() {
       setLoading(false);
     }
   };
+
+  const handleRating = async (courseId, rating) => {
+    try {
+      await sessionsService.rateCourse(courseId, rating);
+      setUserRating(rating);
+      toast({
+        title: "Success",
+        description: "Thank you for rating this course!",
+      });
+      fetchCourses(); // Refresh courses to update rating
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleViewContent = (courseId) => {
+    const selected = courses.find(course => course.id === courseId);
+    setSelectedCourse(selected);
+  };
+
+  const RatingStars = ({ courseId, currentRating, userHasRated }) => (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`w-5 h-5 cursor-pointer ${
+            star <= currentRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+          }`}
+          onClick={() => !userHasRated && handleRating(courseId, star)}
+        />
+      ))}
+    </div>
+  );
 
   const CourseCard = ({ course }) => (
     <motion.div
@@ -83,9 +123,17 @@ export default function SessionsPage() {
             {course.view_count}
           </div>
           <div className="flex items-center">
-            <Star className="w-4 h-4 mr-1" />
-            {course.rating.toFixed(1)}
+            <Users className="w-4 h-4 mr-1" />
+            {course.attendees_count || 0}
           </div>
+        </div>
+
+        <div className="mb-4">
+          <RatingStars
+            courseId={course.id}
+            currentRating={course.rating}
+            userHasRated={course.user_has_rated}
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -93,21 +141,35 @@ export default function SessionsPage() {
             <User className="w-4 h-4 mr-1" />
             <span className="text-sm text-gray-600">{course.mentor_name}</span>
           </div>
-          <Button
-            onClick={() => handleViewContent(course.id)}
-            variant="outline"
-          >
-            View Content
-          </Button>
+          <div className="flex space-x-2">
+            <Button
+              onClick={() => handleAttendance(course.id)}
+              variant="outline"
+              size="sm"
+            >
+              Attend
+            </Button>
+            <Button
+              onClick={() => handleViewContent(course.id)}
+              variant="outline"
+              size="sm"
+            >
+              View Content
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>
   );
 
-  const handleViewContent = async (courseId) => {
+  const handleAttendance = async (courseId) => {
     try {
-      const content = await sessionsService.getCourseContent(courseId);
-      setSelectedCourse(content);
+      await sessionsService.attendCourse(courseId);
+      toast({
+        title: "Success",
+        description: "You've been added to the attendees list!",
+      });
+      fetchCourses();
     } catch (error) {
       toast({
         title: "Error",
@@ -116,6 +178,44 @@ export default function SessionsPage() {
       });
     }
   };
+
+  const ExamDialog = () => (
+    <Dialog open={showExam} onOpenChange={() => setShowExam(false)}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Quick Exam - {examType}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex space-x-4">
+            <Button
+              onClick={() => setExamType('entrepreneurial')}
+              variant={examType === 'entrepreneurial' ? 'default' : 'outline'}
+            >
+              Entrepreneurial
+            </Button>
+            <Button
+              onClick={() => setExamType('general')}
+              variant={examType === 'general' ? 'default' : 'outline'}
+            >
+              General Culture
+            </Button>
+            <Button
+              onClick={() => setExamType('technical')}
+              variant={examType === 'technical' ? 'default' : 'outline'}
+            >
+              Technical
+            </Button>
+          </div>
+          {examType && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              {/* Exam content would be loaded here based on examType */}
+              <p>Exam questions for {examType} knowledge will appear here.</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   const ContentDialog = () => (
     <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
@@ -142,15 +242,46 @@ export default function SessionsPage() {
                 <FileText className="w-6 h-6 mr-2 text-blue-500" />
                 <span>Course Notes</span>
               </div>
-              <Button
-                onClick={() => window.open(selectedCourse.pdf_note, '_blank')}
-                variant="outline"
-              >
-                Download PDF
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowPdfViewer(true)}
+                  variant="outline"
+                >
+                  View PDF
+                </Button>
+                <Button
+                  onClick={() => window.open(selectedCourse.pdf_note, '_blank')}
+                  variant="outline"
+                >
+                  Download PDF
+                </Button>
+              </div>
             </div>
           )}
+
+          <Button
+            onClick={() => setShowExam(true)}
+            className="w-full"
+          >
+            <PenTool className="w-4 h-4 mr-2" />
+            Take Quick Exam
+          </Button>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const PdfViewerDialog = () => (
+    <Dialog open={showPdfViewer} onOpenChange={() => setShowPdfViewer(false)}>
+      <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Course Notes</DialogTitle>
+        </DialogHeader>
+        <iframe
+          src={`${selectedCourse?.pdf_note}#toolbar=0`}
+          className="w-full h-full rounded-lg"
+          title="PDF Viewer"
+        />
       </DialogContent>
     </Dialog>
   );
@@ -202,6 +333,8 @@ export default function SessionsPage() {
           )}
 
           <ContentDialog />
+          <PdfViewerDialog />
+          <ExamDialog />
         </div>
       </div>
     </BeginnerLayout>

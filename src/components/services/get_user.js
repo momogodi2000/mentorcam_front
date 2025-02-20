@@ -1,18 +1,24 @@
-// services/getUser.js
-import axiosInstance from './backend_connection'; // Import your axios instance
+import axiosInstance from './backend_connection';
 
-/**
- * Fetch the current user's data from the backend
- * @returns {Promise} Response with user data
- */
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
 export const getUser = async () => {
     try {
-        console.log('Fetching current user...'); // Debugging log
         const response = await axiosInstance.get('/current-user/');
-        console.log('Fetched user data:', response.data); // Debugging log
-        return response.data;
+        const profilePicture = response.data.profile_picture;
+        return {
+            ...response.data,
+            profile_picture: profilePicture
+                ? `${API_BASE_URL}${profilePicture}`  // Use the full URL from the backend
+                : null,
+            full_name: response.data.full_name,
+            email: response.data.email,
+            phone_number: response.data.phone_number,
+            location: response.data.location,
+            user_type: response.data.user_type
+        };
     } catch (error) {
-        console.error('Error fetching user data:', error); // Debugging log
+        console.error('Error fetching user data:', error);
         throw error;
     }
 };

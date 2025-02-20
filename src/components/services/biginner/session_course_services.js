@@ -106,6 +106,25 @@ class SessionsService {
             status: 500
         };
     }
+
+    // Add to SessionsService class:
+async rateCourse(courseId, rating) {
+    try {
+        const response = await axiosInstance.post(`/course-rating/${courseId}/`, { rating });
+        return response.data;
+    } catch (error) {
+        throw this.handleError(error);
+    }
+}
+
+async attendCourse(courseId) {
+    try {
+        const response = await axiosInstance.post(`/course-attendance/${courseId}/`);
+        return response.data;
+    } catch (error) {
+        throw this.handleError(error);
+    }
+}
 }
 
 export const sessionsService = new SessionsService();

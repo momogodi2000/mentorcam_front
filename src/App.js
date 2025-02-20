@@ -29,6 +29,8 @@ import SettingPage from './components/dashboard/professionnal/setting/profession
 import OnlineClasses from './components/dashboard/professionnal/classe/online_classe';
 import Classe from './components/dashboard/professionnal/classe/classe';
 import Students from './components/dashboard/professionnal/Students/students';
+import EarningsDashboard from './components/dashboard/professionnal/earning/Earnings';
+import ProMessages from './components/dashboard/professionnal/message_pro/pro_message';
 
 
 
@@ -257,6 +259,22 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="professional">
               <Students />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/earning"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <EarningsDashboard />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/pro_messages"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <ProMessages />
             </ProtectedRoute>
           }
         />

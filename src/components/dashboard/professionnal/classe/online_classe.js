@@ -358,6 +358,20 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
 };
 
 
+const getImageUrl = (relativePath) => {
+  if (!relativePath) return null;
+
+  const BACKEND_URL = 'http://127.0.0.1:8000';
+
+  if (relativePath.startsWith('http')) {
+      return relativePath;
+  }
+
+  const cleanPath = relativePath.replace(/^\/+/, '');
+
+  return `${BACKEND_URL}/${cleanPath}`;
+}
+
 const OnlineClasses = () => {
   const navigate = useNavigate();
   const [upcomingClasses, setUpcomingClasses] = useState([]);
@@ -624,7 +638,7 @@ const OnlineClasses = () => {
                 >
                   <div className="relative">
                     <img
-                      src={course.course_image || "/api/placeholder/400/200"}
+                      src={getImageUrl(course.course_image) || "/api/placeholder/400/200"}
                       alt={course.title}
                       className="w-full h-48 object-cover"
                     />

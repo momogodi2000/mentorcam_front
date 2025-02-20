@@ -3,27 +3,29 @@ import {
     Sun, Moon, Globe, Users, BookOpen, Calendar, Search, Bell, Menu, X,
     BookOpenCheck, MessageSquare, Star, Award, User, Clock, Heart, MapPin,
     Briefcase, Wallet, ChartBar, GraduationCap, Settings, Video, LogOut,
-    BarChart
+    BarChart, UserCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { logout } from '../../../authService';
-import { getUser } from '../../services/get_user'; // Import the getUser service
+import { getUser } from '../../services/get_user';
 
 const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsEnglish }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [currentUser, setCurrentUser] = useState(null); // State to store current user data
+    const [currentUser, setCurrentUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    // Fetch current user data on component mount
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
-                const userData = await getUser(); // Use the getUser service
-                setCurrentUser(userData); // Set the current user data
+                const userData = await getUser();
+                setCurrentUser(userData);
             } catch (error) {
-                console.error('Error fetching user data:', error); // Debugging log
-                // If there's an error, force logout
+                console.error('Error fetching user data:', error);
                 handleLogout();
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -36,121 +38,153 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
     };
 
     const menuItems = [
-        { icon: BarChart, label: isEnglish ? 'Complete profile' : 'Finalise le profile', path: '/complete' },
+        { icon: BarChart, label: isEnglish ? 'Complete Profile' : 'Finaliser le Profil', path: '/complete' },
         { icon: ChartBar, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/professional_dashboard' },
-        { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants', path: '/student'  },
-        { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions' },
+        { icon: Users, label: isEnglish ? 'My Students' : 'Mes Étudiants', path: '/student' },
+        { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '#' },
         { icon: Video, label: isEnglish ? 'Online Classes' : 'Cours en Ligne', path: '/online_classe' },
-        { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus' },
-        { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours', path: '/classe'  },
-        { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages' },
-        { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres',path: '/setting' }
+        { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus', path: '/earning' },
+        { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours', path: '/classe' },
+        { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/pro_messages' },
+        { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres', path: '/setting' }
     ];
 
     const handleLogout = async () => {
         try {
-            console.log('Logging out...'); // Debugging log
             await logout();
-            // Clear local storage and session storage
             localStorage.clear();
             sessionStorage.clear();
-            // Redirect to login page and replace history
             navigate('/login', { replace: true });
-            // Force a hard reload to clear any cached data
             window.location.reload();
         } catch (error) {
-            console.error('Logout failed:', error); // Debugging log
-            // Still redirect to login page even if there's an error
+            console.error('Logout failed:', error);
             navigate('/login', { replace: true });
         }
     };
 
-    // Get user initials for avatar
-    const getUserInitials = () => {
-        if (!currentUser) return 'U';
-        const names = currentUser.full_name ? currentUser.full_name.split(' ') : [];
-        if (names.length >= 2) {
-            return `${names[0][0]}${names[1][0]}`.toUpperCase();
-        }
-        return currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'U';
+    const ProfileSection = () => {
+        const [imageError, setImageError] = useState(false);
+
+        const handleImageError = () => {
+            setImageError(true);
+        };
+
+        return (
+            <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="p-6 mb-6 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+            >
+                <div className="flex items-start space-x-4">
+                    <div className="relative">
+                        {currentUser?.profile_picture && !imageError ? (
+                            <img
+                                src={currentUser.profile_picture}
+                                alt="Profile"
+                                className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                onError={handleImageError}
+                            />
+                        ) : (
+                            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                                <UserCircle className="w-8 h-8 text-white" />
+                            </div>
+                        )}
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-lg">{currentUser?.full_name || 'Loading...'}</h3>
+                        <p className="text-blue-100 text-sm">{currentUser?.email}</p>
+                        <div className="flex items-center mt-2 text-sm text-blue-100">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {currentUser?.location || 'Location not set'}
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
     };
 
     return (
         <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-            {/* Sidebar */}
-            <aside className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${
-                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border-r border-gray-200 dark:border-gray-700`}>
-                <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-                    <div className="flex items-center space-x-3">
-                        <BookOpenCheck className="w-8 h-8 text-blue-600" />
-                        <span className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                            MentorCam Pro
-                        </span>
-                    </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="md:hidden"
-                        aria-label="Close sidebar"
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.aside
+                        initial={{ x: -300 }}
+                        animate={{ x: 0 }}
+                        exit={{ x: -300 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="fixed top-0 left-0 z-40 w-72 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700"
                     >
-                        <X className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-gray-500'}`} />
-                    </button>
-                </div>
-
-                <div className="p-4">
-                    <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                            <span className="text-white font-bold">{getUserInitials()}</span>
-                        </div>
-                        <div>
-                            <h3 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                {currentUser?.full_name || 'Loading...'}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                                {currentUser?.email || 'Loading...'}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                                {currentUser?.phone_number || 'Loading...'}
-                            </p>
-                        </div>
-                    </div>
-
-                    <nav className="space-y-1">
-                        {menuItems.map((item, index) => (
-                            <button
-                                onClick={() => navigate(item.path)}
-                                key={index}
-                                className={`flex items-center w-full p-3 rounded-lg transition-colors ${
-                                    index === 0
-                                        ? 'bg-blue-600 text-white'
-                                        : `${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`
-                                }`}
+                        <div className="flex items-center justify-between p-4">
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex items-center space-x-3"
                             >
-                                <item.icon className="w-5 h-5 mr-3" />
-                                {item.label}
+                                <BookOpenCheck className="w-8 h-8 text-blue-600" />
+                                <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                    MentorCam Pro
+                                </span>
+                            </motion.div>
+                            <button
+                                onClick={() => setIsSidebarOpen(false)}
+                                className="md:hidden"
+                            >
+                                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                             </button>
-                        ))}
-                    </nav>
-                </div>
+                        </div>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center w-full p-3 rounded-lg transition-colors text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700"
-                    >
-                        <LogOut className="w-5 h-5 mr-3" />
-                        {isEnglish ? 'Logout' : 'Déconnexion'}
-                    </button>
-                </div>
-            </aside>
+                        <div className="px-4">
+                            <ProfileSection />
 
-            <div className={`p-4 sm:ml-64 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+                            <nav className="space-y-2">
+                                {menuItems.map((item, index) => (
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => navigate(item.path)}
+                                        key={index}
+                                        className={`flex items-center w-full p-3 rounded-lg transition-all ${
+                                            index === 0
+                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                : `text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`
+                                        }`}
+                                    >
+                                        <item.icon className="w-5 h-5 mr-3" />
+                                        {item.label}
+                                    </motion.button>
+                                ))}
+                            </nav>
+                        </div>
+
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-700"
+                        >
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center w-full p-3 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <LogOut className="w-5 h-5 mr-3" />
+                                {isEnglish ? 'Logout' : 'Déconnexion'}
+                            </button>
+                        </motion.div>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
+
+            <div className={`p-4 ${isSidebarOpen ? 'sm:ml-72' : ''} transition-all duration-300`}>
+                <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mb-6 p-4 rounded-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}
+                >
                     <div className="flex items-center justify-between">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="md:hidden text-gray-500 dark:text-gray-400"
-                            aria-label="Open sidebar"
+                            className={`md:hidden text-gray-500 dark:text-gray-400 ${isSidebarOpen ? 'hidden' : ''}`}
                         >
                             <Menu className="w-6 h-6" />
                         </button>
@@ -161,42 +195,54 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
                                 <input
                                     type="text"
                                     placeholder={isEnglish ? "Search students, sessions..." : "Rechercher étudiants, sessions..."}
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-6">
-                            <button
+                        <div className="flex items-center space-x-4">
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={toggleTheme}
-                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
                                 {isDarkMode ? (
                                     <Sun className="w-5 h-5 text-gray-300" />
                                 ) : (
                                     <Moon className="w-5 h-5 text-gray-600" />
                                 )}
-                            </button>
-                            <button
+                            </motion.button>
+                            
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={() => setIsEnglish(!isEnglish)}
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                                aria-label="Change language"
+                                className="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <Globe className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+                                <Globe className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                 <span className="ml-2">{isEnglish ? 'EN' : 'FR'}</span>
-                            </button>
-                            <button
-                                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                                aria-label="Notifications"
+                            </motion.button>
+
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <Bell className={`w-5 h-5 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
+                                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+                            </motion.button>
                         </div>
                     </div>
-                </div>
-                {children}
+                </motion.div>
+                
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    {children}
+                </motion.div>
             </div>
         </div>
     );
