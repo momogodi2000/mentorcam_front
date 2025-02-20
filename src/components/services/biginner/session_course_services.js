@@ -125,6 +125,11 @@ async attendCourse(courseId) {
         throw this.handleError(error);
     }
 }
+
+async getQuickExam(courseId) {
+    const response = await axiosInstance.get(`/quick-exams/${courseId}/`);
+    return response.data;
+  }
 }
 
 export const sessionsService = new SessionsService();

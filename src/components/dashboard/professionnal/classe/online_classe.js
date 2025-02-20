@@ -14,7 +14,8 @@ import {
   Search,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  Book
 } from 'lucide-react';
 import {
   Dialog,
@@ -72,7 +73,8 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
 
   const [error, setError] = useState('');
   const [availableSubdomains, setAvailableSubdomains] = useState([]);
- 
+  const navigate = useNavigate(); // Use the useNavigate hook
+
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -341,6 +343,21 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
               rows="4"
               required
             />
+          </div>
+
+            <div className="space-y-2 mt-4">
+            <Label>
+              {isEnglish ? 'Quick Exam (Optional)' : 'Examen Rapide (Optionnel)'}
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate('/quick-exams')}
+            >
+              <Book className="w-4 h-4 mr-2" />
+              {isEnglish ? 'Manage Quick Exams' : 'Gérer les Examens Rapides'}
+            </Button>
           </div>
 
           <DialogFooter>

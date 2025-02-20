@@ -120,7 +120,74 @@ const onlineCourseServices = {
     } catch (error) {
       throw error;
     }
+  },
+  // Quick Exam Services
+  createQuickExam: async (examData) => {
+    try {
+      const response = await axiosInstance.post('/quick-exams/', examData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getQuickExams: async () => {
+    try {
+      const response = await axiosInstance.get('/quick-exams/');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getQuickExam: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/quick-exams/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateQuickExam: async (id, examData) => {
+    try {
+      const response = await axiosInstance.put(`/quick-exams/${id}/`, examData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteQuickExam: async (id) => {
+    try {
+      const response = await axiosInstance.delete(`/quick-exams/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Add quick exam to course
+  addQuickExamToCourse: async (courseId, examId) => {
+    try {
+      const response = await axiosInstance.post(`/courses/${courseId}/add-quick-exam/`, {
+        quick_exam_id: examId
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
+
 };
+
 
 export default onlineCourseServices;

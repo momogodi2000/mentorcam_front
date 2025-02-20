@@ -33,6 +33,10 @@ import EarningsDashboard from './components/dashboard/professionnal/earning/Earn
 import ProMessages from './components/dashboard/professionnal/message_pro/pro_message';
 
 
+import QuickExamDashboard from './components/dashboard/professionnal/classe/quick-exams';
+import { QuickExamStats } from './components/dashboard/professionnal/classe/QuickExamViews';
+import { QuickExamList } from './components/dashboard/professionnal/classe/QuickExamList';
+
 
 
 
@@ -279,6 +283,30 @@ export default function App() {
           }
         />
 
+<Route
+          path="/quick-exams"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <QuickExamDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quick-exams/stats"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <QuickExamStats />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quick-exams/list"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <QuickExamList />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Institution routes */}
         <Route
