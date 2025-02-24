@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Book,
@@ -30,7 +30,6 @@ import ProfessionalLayout from '../professionnal_layout';
 
 const QuickExamDashboard = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
   
@@ -78,22 +77,22 @@ const QuickExamDashboard = () => {
         );
       }
   
-      // Pass the examData object directly to the service
-      // The service will handle FormData creation
-      await onlineCourseServices.createQuickExam(examData);
+      // Create the quick exam and get the response
+      const response = await onlineCourseServices.createQuickExam(examData);
+      
+      // Redirect to the OnlineClasse page with the exam ID and open the modal
+      navigate('/online_classe', { 
+        state: { 
+          openCreateCourseModal: true,
+          quickExamId: response.id // Pass the exam ID
+        }
+      });
   
       toast.success(
         isEnglish 
           ? 'Quick exam created successfully!' 
           : 'Examen rapide créé avec succès!'
       );
-  
-      navigate('/online_classe', { 
-        state: { 
-          openCreateCourseModal: true,
-          examCreated: true 
-        }
-      });
     } catch (error) {
       toast.error(error.message);
     } finally {

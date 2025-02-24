@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Video,
   Users,
@@ -56,7 +56,8 @@ const DOMAINS = {
   "Sports & Fitness": ["Athlete Training", "Sports Management", "Physical Therapy", "Nutritional Coaching", "Recreational Sports"],
   "Music & Performing Arts": ["Music Composition", "Theater Acting", "Film Production", "Dance Choreography", "Instrumental Training"]
 };
-const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCreated }) => {
+
+const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCreated, quickExamId = '' }) => {
   const [courseData, setCourseData] = useState({
     title: '',
     date: '',
@@ -68,13 +69,23 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
     mode: '',
     pdf_note: null,
     video: null,
-    course_image: null
+    course_image: null,
+    quick_exam_id: ''
   });
 
   const [error, setError] = useState('');
   const [availableSubdomains, setAvailableSubdomains] = useState([]);
   const navigate = useNavigate(); // Use the useNavigate hook
 
+  // Set quickExamId when component mounts or when the prop changes
+  useEffect(() => {
+    if (quickExamId) {
+      setCourseData(prev => ({
+        ...prev,
+        quick_exam_id: quickExamId
+      }));
+    }
+  }, [quickExamId]);
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -106,7 +117,6 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
       subdomain: value
     }));
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -345,7 +355,22 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
             />
           </div>
 
-            <div className="space-y-2 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="quick_exam_id">
+              {isEnglish ? 'Quick Exam ID' : 'ID d\'Examen Rapide'}
+            </Label>
+            <Input
+              id="quick_exam_id"
+              name="quick_exam_id"
+              value={courseData.quick_exam_id}
+              onChange={handleInputChange}
+              placeholder={isEnglish ? "Enter Quick Exam ID if available" : "Entrez l'ID de l'examen rapide si disponible"}
+              className={quickExamId ? "bg-gray-100 dark:bg-gray-700" : ""}
+              readOnly={!!quickExamId}
+            />
+          </div>
+
+          <div className="space-y-2 mt-4">
             <Label>
               {isEnglish ? 'Quick Exam (Optional)' : 'Examen Rapide (Optionnel)'}
             </Label>
@@ -353,7 +378,7 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => navigate('/quick-exams')}
+              onClick={() => navigate('/quick-exams', { state: { returnToCourseCreation: true } })}
             >
               <Book className="w-4 h-4 mr-2" />
               {isEnglish ? 'Manage Quick Exams' : 'Gérer les Examens Rapides'}
@@ -391,6 +416,7 @@ const getImageUrl = (relativePath) => {
 
 const OnlineClasses = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [pastClasses, setPastClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -404,10 +430,21 @@ const OnlineClasses = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [managementModalOpen, setManagementModalOpen] = useState(false);
   const [managementMode, setManagementMode] = useState('edit');
+  const [quickExamId, setQuickExamId] = useState('');
 
   useEffect(() => {
     fetchCourses();
   }, []);
+
+  // Check for location state to open modal and set quick exam ID
+  useEffect(() => {
+    if (location.state?.openCreateCourseModal) {
+      setIsModalOpen(true);
+      if (location.state.quickExamId) {
+        setQuickExamId(location.state.quickExamId);
+      }
+    }
+  }, [location.state]);
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -442,6 +479,15 @@ const OnlineClasses = () => {
     setSelectedCourse(course);
     setManagementMode('report');
     setManagementModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setQuickExamId('');
+    // Clear the location state if it exists
+    if (location.state?.openCreateCourseModal) {
+      navigate(location.pathname, { replace: true });
+    }
   };
 
   const formatDate = (dateString) => {
@@ -519,13 +565,14 @@ const OnlineClasses = () => {
 
         <CreateCourseModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleCloseModal}
           isEnglish={isEnglish}
           isDarkMode={isDarkMode}
           onCourseCreated={fetchCourses}
+          quickExamId={quickExamId}
         />
 
-                  {/* Add ManageOnlineClass component */}
+        {/* Add ManageOnlineClass component */}
         <ManageOnlineClass
           course={selectedCourse}
           isOpen={managementModalOpen}
@@ -713,8 +760,8 @@ const OnlineClasses = () => {
             </div>
           )}
         </section>
-        {/* Past Classes Section */}
-        <section>
+       {/* Past Classes Section */}
+       <section>
           <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
             {isEnglish ? 'Past Classes' : 'Cours Passés'}
           </h2>
