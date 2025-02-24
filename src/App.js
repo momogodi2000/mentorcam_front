@@ -34,8 +34,10 @@ import ProMessages from './components/dashboard/professionnal/message_pro/pro_me
 
 
 import QuickExamDashboard from './components/dashboard/professionnal/classe/quick-exams';
-import { QuickExamStats } from './components/dashboard/professionnal/classe/QuickExamViews';
-import { QuickExamList } from './components/dashboard/professionnal/classe/QuickExamList';
+import QuickExamStats from  './components/dashboard/professionnal/classe/QuickExamViews';
+import QuickExamList from './components/dashboard/professionnal/classe/QuickExamList';
+import QuickExamResults from './components/dashboard/professionnal/classe/QuickExamResults';
+
 
 
 
@@ -307,6 +309,15 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+           <Route
+          path="/quick-exams/results"
+          element={
+            <ProtectedRoute requiredRole="professional">
+              <QuickExamResults />
+            </ProtectedRoute>
+          }
+        />
+
 
         {/* Institution routes */}
         <Route

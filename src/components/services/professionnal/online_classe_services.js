@@ -122,46 +122,110 @@ const onlineCourseServices = {
     }
   },
   // Quick Exam Services
+  // Quick Exam Services
   createQuickExam: async (examData) => {
     try {
-      const response = await axiosInstance.post('/quick-exams/', examData, {
+      const formData = new FormData();
+      
+      // Debug logging
+      console.log('Sending exam data:', {
+        title: examData.title,
+        exam_type: examData.examType,
+        duration: examData.duration,
+        max_attempts: examData.maxAttempts,
+        questions_pdf: examData.questionsPdf?.name,
+        answers_pdf: examData.answersPdf?.name
+      });
+
+      // Correctly append form data with proper field names
+      formData.append('title', examData.title);
+      formData.append('exam_type', examData.examType);
+      formData.append('duration', examData.duration);
+      formData.append('max_attempts', examData.maxAttempts);
+      
+      // Only append files if they exist
+      if (examData.questionsPdf instanceof File) {
+        formData.append('questions_pdf', examData.questionsPdf);
+      }
+      if (examData.answersPdf instanceof File) {
+        formData.append('answers_pdf', examData.answersPdf);
+      }
+
+      // Debug: Log FormData entries
+      for (let pair of formData.entries()) {
+        console.log('FormData entry:', pair[0], pair[1] instanceof File ? pair[1].name : pair[1]);
+      }
+
+      const response = await axiosInstance.post('/quick-exams/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          // Ensure authorization header is present
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // adjust based on your auth method
         },
+        // Add request debugging
+        onUploadProgress: (progressEvent) => {
+          console.log('Upload progress:', progressEvent.loaded, '/', progressEvent.total);
+        }
       });
+      
       return response.data;
     } catch (error) {
-      throw error;
+      // Enhanced error logging
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+
+      // Throw a more informative error
+      const errorMessage = error.response?.data 
+        ? (typeof error.response.data === 'object' 
+            ? Object.values(error.response.data).join('. ') 
+            : error.response.data)
+        : 'Error creating quick exam. Please check your form data and try again.';
+      
+      throw new Error(errorMessage);
     }
   },
+
 
   getQuickExams: async () => {
     try {
       const response = await axiosInstance.get('/quick-exams/');
       return response.data;
     } catch (error) {
-      throw error;
-    }
-  },
-
-  getQuickExam: async (id) => {
-    try {
-      const response = await axiosInstance.get(`/quick-exams/${id}/`);
-      return response.data;
-    } catch (error) {
+      console.error('Error fetching quick exams:', error);
       throw error;
     }
   },
 
   updateQuickExam: async (id, examData) => {
     try {
-      const response = await axiosInstance.put(`/quick-exams/${id}/`, examData, {
+      const formData = new FormData();
+      
+      // Add fields that are being updated
+      if (examData.title) formData.append('title', examData.title);
+      if (examData.examType) formData.append('exam_type', examData.examType);
+      if (examData.duration) formData.append('duration', examData.duration);
+      if (examData.maxAttempts) formData.append('max_attempts', examData.maxAttempts);
+      
+      // Only append files if new ones are provided
+      if (examData.questionsPdf) {
+        formData.append('questions_pdf', examData.questionsPdf);
+      }
+      if (examData.answersPdf) {
+        formData.append('answers_pdf', examData.answersPdf);
+      }
+
+      const response = await axiosInstance.patch(`/quick-exams/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
     } catch (error) {
+      console.error('Error updating quick exam:', error.response?.data);
       throw error;
     }
   },
@@ -171,23 +235,20 @@ const onlineCourseServices = {
       const response = await axiosInstance.delete(`/quick-exams/${id}/`);
       return response.data;
     } catch (error) {
+      console.error('Error deleting quick exam:', error);
       throw error;
     }
   },
 
-  // Add quick exam to course
-  addQuickExamToCourse: async (courseId, examId) => {
+  getQuickExam: async (id) => {
     try {
-      const response = await axiosInstance.post(`/courses/${courseId}/add-quick-exam/`, {
-        quick_exam_id: examId
-      });
+      const response = await axiosInstance.get(`/quick-exams/${id}/`);
       return response.data;
     } catch (error) {
+      console.error('Error fetching quick exam:', error);
       throw error;
     }
   }
-
 };
-
 
 export default onlineCourseServices;
