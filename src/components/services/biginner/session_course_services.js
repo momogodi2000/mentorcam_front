@@ -107,29 +107,45 @@ class SessionsService {
         };
     }
 
-    // Add to SessionsService class:
-async rateCourse(courseId, rating) {
-    try {
-        const response = await axiosInstance.post(`/course-rating/${courseId}/`, { rating });
-        return response.data;
-    } catch (error) {
-        throw this.handleError(error);
+    // Rate a course
+    async rateCourse(courseId, rating) {
+        try {
+            const response = await axiosInstance.post(`/course-rating/${courseId}/`, { rating });
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
     }
-}
 
-async attendCourse(courseId) {
-    try {
-        const response = await axiosInstance.post(`/course-attendance/${courseId}/`);
-        return response.data;
-    } catch (error) {
-        throw this.handleError(error);
+    // Mark course as attended
+    async attendCourse(courseId) {
+        try {
+            const response = await axiosInstance.post(`/course-attendance/${courseId}/`);
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
     }
-}
 
-async getQuickExam(courseId) {
-    const response = await axiosInstance.get(`/quick-exams/${courseId}/`);
-    return response.data;
-  }
+    // Get quick exam
+    async getQuickExam(courseId) {
+        try {
+            const response = await axiosInstance.get(`/quick-exams/${courseId}/`);
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
+
+    // Submit exam answers
+    async submitExam(examId, answers) {
+        try {
+            const response = await axiosInstance.post(`/quick-exams/${examId}/submit/`, { answers });
+            return response.data;
+        } catch (error) {
+            throw this.handleError(error);
+        }
+    }
 }
 
 export const sessionsService = new SessionsService();

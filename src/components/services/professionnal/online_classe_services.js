@@ -23,6 +23,7 @@ const onlineCourseServices = {
       formData.append('domain', courseData.domain);
       formData.append('description', courseData.description);
       formData.append('mode', courseData.mode);
+      formData.append('quick_exam_id', courseData.quick_exam_id); // Add quick_exam_id
 
       // Handle optional fields
       if (courseData.subdomain) {
@@ -55,7 +56,6 @@ const onlineCourseServices = {
       throw error;
     }
   },
-
 
   // Update a course
   updateCourse: async (id, courseData) => {

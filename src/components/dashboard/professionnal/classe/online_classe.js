@@ -70,7 +70,7 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
     pdf_note: null,
     video: null,
     course_image: null,
-    quick_exam_id: ''
+    quick_exam_id: quickExamId || '' // Initialize with quickExamId if provided
   });
 
   const [error, setError] = useState('');
@@ -121,7 +121,7 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
+  
     try {
       // Validate required fields
       if (!courseData.title || !courseData.date || !courseData.time || 
@@ -129,7 +129,7 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
           !courseData.mode) {
         throw new Error(isEnglish ? 'Please fill all required fields' : 'Veuillez remplir tous les champs requis');
       }
-
+  
       // Validate online course requirements
       if (courseData.mode === 'online' && !courseData.pdf_note && !courseData.video) {
         throw new Error(isEnglish ? 
@@ -137,15 +137,18 @@ const CreateCourseModal = ({ isOpen, onClose, isEnglish, isDarkMode, onCourseCre
           'Les cours en ligne doivent avoir soit une note PDF, soit une vidéo'
         );
       }
-
+  
       // Format date and time
       const dateTime = new Date(`${courseData.date}T${courseData.time}`);
       const formattedData = {
         ...courseData,
         date: dateTime.toISOString(),
-        duration: parseInt(courseData.duration)
+        duration: parseInt(courseData.duration),
+        quick_exam_id: courseData.quick_exam_id // Ensure quick_exam_id is included
       };
-
+  
+      console.log("Formatted Data:", formattedData); // Debugging: Check if quick_exam_id is present
+  
       const response = await onlineCourseServices.createCourse(formattedData);
       toast.success(isEnglish ? 'Course created successfully!' : 'Cours créé avec succès!');
       onCourseCreated();

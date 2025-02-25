@@ -30,12 +30,11 @@ const AdminLayout = ({ children }) => {
   }, []);
 
   const menuItems = [
-    { icon: BarChart2, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/admin' },
-    { icon: TrendingUp, label: isEnglish ? 'Statistics' : 'Statistiques', path: '/admin' },
+    { icon: BarChart2, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/stat_page' },
     { icon: Users, label: isEnglish ? 'Users' : 'Utilisateurs', path: '/admin/users' },
     { icon: BookOpen, label: isEnglish ? 'Courses' : 'Formations', path: '/admin' },
     { icon: Calendar, label: isEnglish ? 'Events' : 'Événements', path: '/admin' },
-    { icon: Wallet, label: isEnglish ? 'Payments' : 'Paiements', path: '/admin' },
+    { icon: Wallet, label: isEnglish ? 'Payments' : 'Paiements', path: '/revenue' },
     { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres', path: '/admin' }
   ];
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { sessionsService } from '../../../services/biginner/session_course_services';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, Video, FileText, Eye, Star, User, Plus, Users, PenTool } from 'lucide-react';
+import { Calendar, Clock, Video, FileText, Eye, Star, User, Plus, Users, PenTool, CheckCircle } from 'lucide-react';
 import { useToast } from '../../../ui/use-toast';
 import {
   Dialog,
@@ -14,6 +14,9 @@ import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
 import { Textarea } from '../../../ui/textarea';
 import { Skeleton } from '../../../ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '../../../ui/radio-group';
+import { Label } from '../../../ui/label_2';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tab';
 import BeginnerLayout from '../biginner_layout';
 
 export default function SessionsPage() {
@@ -27,6 +30,13 @@ export default function SessionsPage() {
   const [examType, setExamType] = useState('');
   const { toast } = useToast();
   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'amateur');
+  const [quickExam, setQuickExam] = useState(null);
+  const [examQuestions, setExamQuestions] = useState(null);
+  const [examAnswers, setExamAnswers] = useState(null);
+  const [userAnswers, setUserAnswers] = useState({});
+  const [examScore, setExamScore] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [examActiveTab, setExamActiveTab] = useState("questions");
 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
@@ -68,9 +78,71 @@ export default function SessionsPage() {
     }
   };
 
-  const handleViewContent = (courseId) => {
+  const handleViewContent = async (courseId) => {
     const selected = courses.find(course => course.id === courseId);
     setSelectedCourse(selected);
+    
+    // Automatically fetch quick exam if available
+    if (selected.quick_exam_info) {
+      try {
+        const exam = await sessionsService.getQuickExam(selected.quick_exam_info.id);
+        setQuickExam(exam);
+        setExamQuestions(exam.questions_pdf);
+        setExamAnswers(exam.answers_pdf);
+        // Reset user answers and score when viewing a new exam
+        setUserAnswers({});
+        setExamScore(null);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load exam data",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleAnswerSelection = (questionNum, option) => {
+    setUserAnswers(prev => ({
+      ...prev,
+      [questionNum]: option
+    }));
+  };
+
+  const handleSubmitExam = async () => {
+    // Generate question count based on the actual exam
+    const questionCount = 20; // Assuming there are 20 questions
+    const answeredCount = Object.keys(userAnswers).length;
+    
+    if (answeredCount < questionCount) {
+      toast({
+        title: "Warning",
+        description: `Please answer all ${questionCount} questions. You've answered ${answeredCount}.`,
+        variant: "warning"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const response = await sessionsService.submitExam(quickExam.id, userAnswers);
+      setExamScore(response.score);
+      toast({
+        title: "Success",
+        description: `Your exam score is ${response.score}`,
+      });
+
+      // Update the session service to reflect the updated stats
+      await fetchCourses();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit exam",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const RatingStars = ({ courseId, currentRating, userHasRated }) => (
@@ -106,7 +178,7 @@ export default function SessionsPage() {
       </div>
 
       <div className="p-6">
-        <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
+        <h3 className="text-xl font-semibold mb-2 text-gray-800">{course.title}</h3>
         <p className="text-gray-600 mb-4 line-clamp-2">{course.description}</p>
 
         <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
@@ -146,6 +218,7 @@ export default function SessionsPage() {
               onClick={() => handleAttendance(course.id)}
               variant="outline"
               size="sm"
+              className="bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200"
             >
               Attend
             </Button>
@@ -153,6 +226,7 @@ export default function SessionsPage() {
               onClick={() => handleViewContent(course.id)}
               variant="outline"
               size="sm"
+              className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200"
             >
               View Content
             </Button>
@@ -179,40 +253,121 @@ export default function SessionsPage() {
     }
   };
 
+  const MultipleChoiceQuestions = () => {
+    const questions = Array.from({ length: 20 }, (_, i) => i + 1);
+    const options = ['A', 'B', 'C', 'D'];
+    
+    return (
+      <div className="space-y-6 mt-4 max-h-96 overflow-y-auto p-4">
+        {questions.map((questionNum) => (
+          <div key={questionNum} className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">Question {questionNum}</h4>
+            <RadioGroup
+              value={userAnswers[questionNum]}
+              onValueChange={(value) => handleAnswerSelection(questionNum, value)}
+              className="flex space-x-4"
+            >
+              {options.map((option) => (
+                <div key={option} className="flex items-center">
+                  <RadioGroupItem
+                    value={option}
+                    id={`q${questionNum}-${option}`}
+                    className="mr-1"
+                  />
+                  <Label htmlFor={`q${questionNum}-${option}`}>{option}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const ExamDialog = () => (
     <Dialog open={showExam} onOpenChange={() => setShowExam(false)}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Quick Exam - {examType}</DialogTitle>
+          <DialogTitle>Quick Exam - {selectedCourse?.title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="flex space-x-4">
-            <Button
-              onClick={() => setExamType('entrepreneurial')}
-              variant={examType === 'entrepreneurial' ? 'default' : 'outline'}
+        
+        <Tabs defaultValue="questions" className="w-full" value={examActiveTab} onValueChange={setExamActiveTab}>
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="questions">Exam Questions</TabsTrigger>
+            <TabsTrigger value="answers">Your Answers</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="questions" className="space-y-4">
+            {examQuestions ? (
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">Exam Questions</h3>
+                  <Button
+                    onClick={() => window.open(examQuestions, '_blank')}
+                    variant="outline"
+                    size="sm"
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-600"
+                  >
+                    Open in New Tab
+                  </Button>
+                </div>
+                <div className="relative w-full h-96 overflow-hidden rounded-lg">
+                  <iframe
+                    src={examQuestions}
+                    className="absolute top-0 left-0 w-full h-full border-0"
+                    title="Exam Questions"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-gray-50 rounded-lg">
+                <Skeleton className="h-48 w-full mb-4" />
+                <p className="text-gray-500">Loading exam questions...</p>
+              </div>
+            )}
+            <Button 
+              onClick={() => setExamActiveTab("answers")}
+              className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              Entrepreneurial
+              Proceed to Answer Questions
             </Button>
-            <Button
-              onClick={() => setExamType('general')}
-              variant={examType === 'general' ? 'default' : 'outline'}
-            >
-              General Culture
-            </Button>
-            <Button
-              onClick={() => setExamType('technical')}
-              variant={examType === 'technical' ? 'default' : 'outline'}
-            >
-              Technical
-            </Button>
-          </div>
-          {examType && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              {/* Exam content would be loaded here based on examType */}
-              <p>Exam questions for {examType} knowledge will appear here.</p>
+          </TabsContent>
+          
+          <TabsContent value="answers" className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-medium mb-4">Answer Sheet</h3>
+              <MultipleChoiceQuestions />
             </div>
-          )}
-        </div>
+            <Button 
+              onClick={handleSubmitExam} 
+              className="w-full bg-green-600 hover:bg-green-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Submit Exam
+                </span>
+              )}
+            </Button>
+            {examScore !== null && (
+              <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                <h3 className="text-lg font-semibold text-green-800">
+                  Your Score: {examScore}%
+                </h3>
+                <p className="text-green-600 mt-2">Thank you for completing the exam!</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
@@ -227,17 +382,17 @@ export default function SessionsPage() {
           <p className="text-gray-600">{selectedCourse?.description}</p>
           
           {selectedCourse?.video && (
-            <div className="aspect-video">
+            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
               <video
                 controls
-                className="w-full h-full rounded-lg"
+                className="w-full h-full"
                 src={selectedCourse.video}
               />
             </div>
           )}
           
           {selectedCourse?.pdf_note && (
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-center">
                 <FileText className="w-6 h-6 mr-2 text-blue-500" />
                 <span>Course Notes</span>
@@ -246,12 +401,14 @@ export default function SessionsPage() {
                 <Button
                   onClick={() => setShowPdfViewer(true)}
                   variant="outline"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-600"
                 >
                   View PDF
                 </Button>
                 <Button
                   onClick={() => window.open(selectedCourse.pdf_note, '_blank')}
                   variant="outline"
+                  className="bg-green-50 hover:bg-green-100 text-green-600"
                 >
                   Download PDF
                 </Button>
@@ -259,13 +416,15 @@ export default function SessionsPage() {
             </div>
           )}
 
-          <Button
-            onClick={() => setShowExam(true)}
-            className="w-full"
-          >
-            <PenTool className="w-4 h-4 mr-2" />
-            Take Quick Exam
-          </Button>
+          {selectedCourse?.quick_exam_info && (
+            <Button
+              onClick={() => setShowExam(true)}
+              className="w-full bg-purple-600 hover:bg-purple-700 transition-colors"
+            >
+              <PenTool className="w-4 h-4 mr-2" />
+              Take Quick Exam
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -300,7 +459,7 @@ export default function SessionsPage() {
             {userType === 'professional' && (
               <Button
                 onClick={() => setIsCreating(true)}
-                className="flex items-center"
+                className="flex items-center bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Course
