@@ -7,6 +7,7 @@ import AdminLayout from './components/dashboard/admin/admin_layout';
 import AdminDashboard from './components/dashboard/admin/admin';
 import AdminStatistics from './components/dashboard/admin/statistic/statistic';
 import AdminRevenue from './components/dashboard/admin/statistic/revenue';
+import AdminEventsPage from './components/dashboard/admin/events_admin/admin_events';
 
 
 import BeginnerDashboard from "./components/dashboard/beginner/beginner";
@@ -152,6 +153,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminRevenue />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/admin_events"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEventsPage />
             </ProtectedRoute>
           }
         />

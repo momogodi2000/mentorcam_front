@@ -33,7 +33,7 @@ const AdminLayout = ({ children }) => {
     { icon: BarChart2, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/stat_page' },
     { icon: Users, label: isEnglish ? 'Users' : 'Utilisateurs', path: '/admin/users' },
     { icon: BookOpen, label: isEnglish ? 'Courses' : 'Formations', path: '/admin' },
-    { icon: Calendar, label: isEnglish ? 'Events' : 'Événements', path: '/admin' },
+    { icon: Calendar, label: isEnglish ? 'Events' : 'Événements', path: '/admin_events' },
     { icon: Wallet, label: isEnglish ? 'Payments' : 'Paiements', path: '/revenue' },
     { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres', path: '/admin' }
   ];
