@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, Upload } from 'lucide-react';
-import ProfessionalLayout from '../professionnal_layout'; // Import the ProfessionalLayout
-import { professionalProfileService } from '../../../services/professionnal/professionalProfileService'; // Import the service
+import { ChevronRight, Upload, X, CreditCard } from 'lucide-react';
+import ProfessionalLayout from '../professionnal_layout';
+import { professionalProfileService } from '../../../services/professionnal/professionalProfileService';
 
 // Domain data
 const DOMAINS = {
@@ -29,6 +29,116 @@ const PLAN_TYPES = [
   { value: 'trimester', label: 'Trimester' },
   { value: 'yearly', label: 'Yearly' }
 ];
+
+const PaymentModal = ({ isOpen, onClose, onSubmit, profileId }) => {
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate mobile number - must start with 6 and have 9 digits
+    if (!/^6\d{8}$/.test(mobileNumber)) {
+      setError('Please enter a valid 9-digit mobile number starting with 6');
+      return;
+    }
+    
+    setError('');
+    setIsProcessing(true);
+    
+    try {
+      // Call API to process payment - key issue is here
+      // The backend expects a phone_number field, not mobile_number
+      await professionalProfileService.activateProfile({
+        profile_id: profileId,
+        phone_number: mobileNumber  // This is correctly named
+      });
+      
+      setIsProcessing(false);
+      onSubmit();
+    } catch (err) {
+      setIsProcessing(false);
+      setError(err.message || 'Payment processing failed. Please try again.');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Complete Payment</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500 focus:outline-none"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <div className="mb-6">
+          <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg mb-4">
+            <CreditCard className="h-10 w-10 text-blue-600 mr-4" />
+            <div>
+              <p className="text-sm text-gray-600">Your profile has been created successfully!</p>
+              <p className="text-sm font-medium text-gray-800">Please complete payment to activate your profile.</p>
+            </div>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Number (9 digits starting with 6)
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={mobileNumber}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 9) {
+                      setMobileNumber(value);
+                    }
+                  }}
+                  placeholder="6XXXXXXXX"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  maxLength={9}
+                />
+                {mobileNumber && mobileNumber.charAt(0) !== '6' && (
+                  <p className="mt-1 text-sm text-yellow-600">Phone number must start with 6</p>
+                )}
+              </div>
+              {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                className="mr-3 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isProcessing || !/^6\d{8}$/.test(mobileNumber)}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? 'Processing...' : 'Complete Payment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish }) => {
   const navigate = useNavigate();
@@ -58,6 +168,9 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
     max_students: ''
   });
   const [errors, setErrors] = useState({});
+  const [profileId, setProfileId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [files, setFiles] = useState({
     certification_file: null,
@@ -128,66 +241,75 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (step === 1 || step === 2) {
       handleNext(e);
-    } else {
-      const validationErrors = validateStep3(formData);
-      if (Object.keys(validationErrors).length === 0) {
-        try {
-          // Clean up the data before submission
-          const profileData = {
-            ...formData,
-            hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-            plan_price: formData.plan_price ? parseFloat(formData.plan_price) : null,
-            max_students: formData.max_students ? parseInt(formData.max_students) : null,
-            subdomains: Array.isArray(formData.subdomains) ? formData.subdomains : [],
-          };
-  
-          // Remove empty strings and file fields
-          Object.keys(profileData).forEach((key) => {
-            if (profileData[key] === '') {
-              profileData[key] = null;
-            }
-          });
-          delete profileData.certification_file;
-          delete profileData.diploma_file;
-  
-          console.log('Submitting profile data:', profileData);
-  
-          // Create profile
-          const response = await professionalProfileService.createProfile(profileData);
-          console.log('Profile created:', response);
-  
-          // Handle file uploads if files exist
-          if (files.certification_file || files.diploma_file) {
-            const formData = new FormData();
-            if (files.certification_file) {
-              formData.append('certification_file', files.certification_file);
-            }
-            if (files.diploma_file) {
-              formData.append('diploma_file', files.diploma_file);
-            }
-  
-            console.log('Uploading files...');
-            await professionalProfileService.uploadFiles(response.id, formData); // Pass profile ID
-          }
-  
-          navigate('/professional_dashboard');
-        } catch (error) {
-          console.error('Error submitting form:', error);
-  
-          // Handle validation errors from the backend
-          if (error.errors) {
-            setErrors(error.errors);
-          } else {
-            setErrors({
-              submit: error.message || 'Failed to create profile. Please try again.',
-            });
-          }
+      return;
+    }
+    
+    // Final step validation
+    const validationErrors = validateStep3(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Clean up the data before submission
+      const profileData = {
+        ...formData,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+        plan_price: formData.plan_price ? parseFloat(formData.plan_price) : null,
+        max_students: formData.max_students ? parseInt(formData.max_students) : null,
+        subdomains: Array.isArray(formData.subdomains) ? formData.subdomains : [],
+      };
+
+      // Remove empty strings and file fields
+      Object.keys(profileData).forEach((key) => {
+        if (profileData[key] === '') {
+          profileData[key] = null;
         }
-      } else {
-        setErrors(validationErrors);
+      });
+      delete profileData.certification_file;
+      delete profileData.diploma_file;
+
+      // Create profile
+      const response = await professionalProfileService.createProfile(profileData);
+      
+      // Save profile ID for payment processing
+      setProfileId(response.id);
+
+      // Handle file uploads if files exist
+      if (files.certification_file || files.diploma_file) {
+        const formData = new FormData();
+        if (files.certification_file) {
+          formData.append('certification_file', files.certification_file);
+        }
+        if (files.diploma_file) {
+          formData.append('diploma_file', files.diploma_file);
+        }
+
+        await professionalProfileService.uploadFiles(response.id, formData);
       }
+      
+      // Show payment modal immediately after profile creation
+      setShowPaymentModal(true);
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+
+      // Handle validation errors from the backend
+      if (error.errors) {
+        setErrors(error.errors);
+      } else {
+        setErrors({
+          submit: error.message || 'Failed to create profile. Please try again.',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -199,6 +321,11 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
         [field]: file
       }));
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    navigate('/professional_dashboard');
   };
 
   const renderStepContent = () => {
@@ -332,7 +459,12 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
                 <input
                   type="text"
                   value={formData.education_year}
-                  onChange={(e) => setFormData({...formData, education_year: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 4) {
+                      setFormData({...formData, education_year: value});
+                    }
+                  }}
                   maxLength={4}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -365,7 +497,12 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
                 <input
                   type="text"
                   value={formData.certification_year}
-                  onChange={(e) => setFormData({...formData, certification_year: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 4) {
+                      setFormData({...formData, certification_year: value});
+                    }
+                  }}
                   maxLength={4}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -440,6 +577,9 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
                       </label>
                     </div>
                     <p className="text-xs text-gray-500">PDF, DOC up to 10MB</p>
+                    {files.certification_file && (
+                      <p className="text-xs text-green-600">{files.certification_file.name}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -461,6 +601,9 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
                       </label>
                     </div>
                     <p className="text-xs text-gray-500">PDF, DOC up to 10MB</p>
+                    {files.diploma_file && (
+                      <p className="text-xs text-green-600">{files.diploma_file.name}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -584,6 +727,15 @@ const CompleteProfile = ({ isDarkMode, setIsDarkMode, isEnglish, setIsEnglish })
           </motion.div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  onSubmit={handlePaymentSuccess}
+  profileId={profileId}
+  profileData={formData}  // Pass the form data with all the fields
+/>
     </ProfessionalLayout>
   );
 };
