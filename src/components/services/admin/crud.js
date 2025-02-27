@@ -1,10 +1,21 @@
 import api from '../backend_connection';
 
 export const UserService = {
-    // Get all users with optional search
-    getUsers: async (searchTerm = '') => {
+    // Get all users with optional search, user_type, and account_status filters
+    getUsers: async (searchTerm = '', userType = '', accountStatus = '') => {
         try {
-            const response = await api.get(`/users/${searchTerm ? `?search=${searchTerm}` : ''}`);
+            let url = '/users/';
+            const params = [];
+            
+            if (searchTerm) params.push(`search=${searchTerm}`);
+            if (userType) params.push(`user_type=${userType}`);
+            if (accountStatus) params.push(`account_status=${accountStatus}`);
+            
+            if (params.length > 0) {
+                url += `?${params.join('&')}`;
+            }
+            
+            const response = await api.get(url);
             return response.data;
         } catch (error) {
             throw error;
@@ -55,6 +66,36 @@ export const UserService = {
     toggleUserActive: async (id) => {
         try {
             const response = await api.patch(`/users/${id}/toggle_active/`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    
+    // Toggle account status (activated/blocked)
+    toggleAccountStatus: async (id) => {
+        try {
+            const response = await api.patch(`/users/${id}/toggle_account_status/`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    
+    // Get professional user details
+    getProfessionalDetails: async (id) => {
+        try {
+            const response = await api.get(`/users/${id}/get_professional_details/`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+    
+    // Verify professional payments
+    verifyProfessionalPayments: async () => {
+        try {
+            const response = await api.get('/users/verify_professional_payments/');
             return response.data;
         } catch (error) {
             throw error;
