@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../../../ui/card';
-import { ChevronLeft, Upload } from 'lucide-react';
+import { ChevronLeft, Upload, Eye, EyeOff } from 'lucide-react';
 import { UserService } from '../../../services/admin/crud';
 import { toast } from 'react-hot-toast';
 
@@ -11,6 +11,8 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
   const isEditMode = id && id !== 'new';
   const isStandalone = !onSubmit; // If no onSubmit prop, it's not being used in a modal
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const USER_TYPES = [
     { value: 'amateur', label: 'Amateur' },
@@ -33,11 +35,15 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
     account_status: 'activated',
     location: '',
     profile_picture: null,
-    is_active: true
+    is_active: true,
+    password: '',
+    confirm_password: ''
   });
 
   // For file upload preview
   const [previewUrl, setPreviewUrl] = useState('');
+  // For password validation
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -45,7 +51,11 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
         setLoading(true);
         try {
           const userData = await UserService.getUser(id);
-          setFormData(userData);
+          setFormData({
+            ...userData,
+            password: '',
+            confirm_password: ''
+          });
           if (userData.profile_picture) {
             setPreviewUrl(userData.profile_picture);
           }
@@ -78,6 +88,11 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
       ...formData,
       [name]: value
     });
+
+    // Clear password error when either password field changes
+    if (name === 'password' || name === 'confirm_password') {
+      setPasswordError('');
+    }
   };
 
   const handleFileChange = (e) => {
@@ -97,19 +112,50 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
     }
   };
 
+  const validateForm = () => {
+    // Check if passwords match when creating a new user or when password is provided for existing user
+    if (!isEditMode || (isEditMode && formData.password)) {
+      if (formData.password !== formData.confirm_password) {
+        setPasswordError("Passwords don't match");
+        return false;
+      }
+      
+      if (!isEditMode && formData.password.length < 8) {
+        setPasswordError("Password must be at least 8 characters long");
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
     
     // Create FormData if we have a file
-    let dataToSend = formData;
+    let dataToSend = { ...formData };
+    
+    // Remove confirm_password from data to send to API
+    delete dataToSend.confirm_password;
+    
+    // Remove password if it's empty in edit mode
+    if (isEditMode && !dataToSend.password) {
+      delete dataToSend.password;
+    }
+    
     if (formData.profile_picture instanceof File) {
       const formDataObj = new FormData();
-      Object.keys(formData).forEach(key => {
+      Object.keys(dataToSend).forEach(key => {
         if (key === 'profile_picture') {
-          formDataObj.append(key, formData[key]);
+          formDataObj.append(key, dataToSend[key]);
         } else {
-          formDataObj.append(key, formData[key]);
+          formDataObj.append(key, dataToSend[key]);
         }
       });
       dataToSend = formDataObj;
@@ -204,6 +250,55 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
                 className="mt-1 block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
+            </div>
+            
+            {/* Password field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Password {isEditMode && <span className="text-gray-500 text-xs">(Leave blank to keep current)</span>}
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  {...(!isEditMode && { required: true, minLength: 8 })}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            
+            {/* Confirm Password field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirm_password"
+                  value={formData.confirm_password}
+                  onChange={handleInputChange}
+                  className={`mt-1 block w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    passwordError ? 'border-red-500' : ''
+                  }`}
+                  {...(!isEditMode && { required: true })}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {passwordError && <p className="mt-1 text-sm text-red-600">{passwordError}</p>}
             </div>
             
             <div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Send, Paperclip, Mic, Video, Image as ImageIcon, Camera, Users, Hash, ChevronRight, Phone, VideoIcon as VideoCall } from 'lucide-react';
 import ProfessionalLayout from '../professionnal_layout';
 import { Card, CardContent } from '../../../ui/card';
@@ -6,92 +6,174 @@ import { ScrollArea } from '../../../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../ui/avatar';
 import { Button } from '../../../ui/button';
 import { Input } from '../../../ui/input';
+import { ChatWebSocket, chatAPI } from '../../../lib/chatWebSocket';
+import { useToast } from "../../../ui/use-toast";
 
 const ProMessages = () => {
-
+  const { toast } = useToast();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isEnglish, setIsEnglish] = useState(true);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [activeChatType, setActiveChatType] = useState('mentors'); // 'mentors' or 'communities'
+  const [messages, setMessages] = useState([]);
+  const [mentors, setMentors] = useState([]);
+  const [communities, setCommunities] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [isLoading, setIsLoading] = useState(false);
+  const webSocketRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-  // Sample data for mentors
-  const mentors = [
-    {
-      id: 1,
-      name: 'Dr. Kamga Paul',
-      role: 'Web Development Expert',
-      avatar: '/api/placeholder/32/32',
-      status: 'online',
-      lastMessage: 'How is your progress with React?',
-      unread: 2,
-      lastSeen: 'Now'
-    },
-    {
-      id: 2,
-      name: 'Mme. Nguemo Sarah',
-      role: 'Digital Marketing Mentor',
-      avatar: '/api/placeholder/32/32',
-      status: 'offline',
-      lastMessage: 'Great work on your last assignment!',
-      unread: 0,
-      lastSeen: '2h ago'
-    },
-    // Add more mentors...
-  ];
+  // Fetch mentors and communities on component mount
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const mentorsData = await chatAPI.getMentorChats();
+        setMentors(mentorsData);
+        
+        const communitiesData = await chatAPI.getCommunityChats();
+        setCommunities(communitiesData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load chats. Please try again later.",
+          variant: "destructive",
+        });
+        console.error('Error fetching chats:', error);
+      }
+    };
 
-  // Sample data for communities
-  const communities = [
-    {
-      id: 1,
-      name: 'Web Development Hub',
-      members: 156,
-      avatar: '/api/placeholder/32/32',
-      lastMessage: 'Anyone experienced with Next.js?',
-      unread: 5
-    },
-    {
-      id: 2,
-      name: 'Digital Marketing Pro',
-      members: 89,
-      avatar: '/api/placeholder/32/32',
-      lastMessage: 'Tips for social media growth',
-      unread: 0
-    },
-    // Add more communities...
-  ];
+    fetchChats();
+  }, []);
 
-  // Sample messages for the selected chat
-  const messages = [
-    {
-      id: 1,
-      sender: 'Dr. Kamga Paul',
-      content: 'How is your progress with the React components?',
-      timestamp: '10:30 AM',
-      type: 'text'
-    },
-    {
-      id: 2,
-      sender: 'me',
-      content: 'I have completed the basic structure. Working on styling now.',
-      timestamp: '10:32 AM',
-      type: 'text'
-    },
-    {
-      id: 3,
-      sender: 'Dr. Kamga Paul',
-      content: 'Great! Let me know if you need any help.',
-      timestamp: '10:35 AM',
-      type: 'text'
-    },
-    // Add more messages...
-  ];
+  // Connect to WebSocket when a chat is selected
+  useEffect(() => {
+    if (selectedChat) {
+      // First load messages
+      const loadMessages = async () => {
+        setIsLoading(true);
+        try {
+          const messagesData = await chatAPI.getChatMessages(selectedChat.id);
+          setMessages(messagesData);
+          // Mark messages as read
+          await chatAPI.markMessagesRead(selectedChat.id);
+          // Update the unread count in the chat list
+          if (activeChatType === 'mentors') {
+            setMentors(prevMentors => 
+              prevMentors.map(mentor => 
+                mentor.id === selectedChat.id ? { ...mentor, unread: 0 } : mentor
+              )
+            );
+          } else {
+            setCommunities(prevCommunities => 
+              prevCommunities.map(community => 
+                community.id === selectedChat.id ? { ...community, unread: 0 } : community
+              )
+            );
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to load messages. Please try again later.",
+            variant: "destructive",
+          });
+          console.error('Error loading messages:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadMessages();
+
+      // Then establish WebSocket connection
+      const token = localStorage.getItem('auth_token') || 'demo-token'; // Get your auth token from where it's stored
+      
+      const handleMessage = (data) => {
+        if (data.type === 'chat_message') {
+          setMessages(prevMessages => [...prevMessages, {
+            id: Date.now(), // Temporary ID until we get a real one
+            sender: data.sender_id === 'me' ? 'me' : data.sender_name,
+            content: data.message,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text'
+          }]);
+        } else if (data.type === 'typing') {
+          // Handle typing indicator
+          console.log(`${data.sender_name} is typing...`);
+        }
+      };
+
+      const handleStatusChange = (status, code) => {
+        setConnectionStatus(status);
+        
+        if (status === 'failed') {
+          toast({
+            title: "Connection Failed",
+            description: "Could not connect to chat server. Please try again later.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      webSocketRef.current = new ChatWebSocket(
+        selectedChat.id,
+        token,
+        handleMessage,
+        handleStatusChange
+      );
+
+      webSocketRef.current.connect();
+
+      // Clean up on unmount or when selected chat changes
+      return () => {
+        if (webSocketRef.current) {
+          webSocketRef.current.disconnect();
+          webSocketRef.current = null;
+        }
+      };
+    }
+  }, [selectedChat, activeChatType]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // Add message sending logic here
-      setMessageInput('');
+    if (messageInput.trim() && webSocketRef.current) {
+      const success = webSocketRef.current.sendMessage(messageInput);
+      
+      if (success) {
+        // Optimistically add message to the UI
+        setMessages(prevMessages => [...prevMessages, {
+          id: Date.now(),
+          sender: 'me',
+          content: messageInput,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text'
+        }]);
+        
+        setMessageInput('');
+      } else {
+        toast({
+          title: "Message Not Sent",
+          description: "Could not send message. Please check your connection.",
+          variant: "destructive",
+        });
+      }
     }
+  };
+
+  const handleTyping = () => {
+    if (webSocketRef.current && connectionStatus === 'connected') {
+      webSocketRef.current.sendTyping();
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setMessageInput(e.target.value);
+    // Debounce this for production
+    handleTyping();
   };
 
   return (
@@ -225,7 +307,18 @@ const ProMessages = () => {
                   <AvatarFallback>{selectedChat.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <h2 className="font-medium dark:text-white">{selectedChat.name}</h2>
+                  <h2 className="font-medium dark:text-white">
+                    {selectedChat.name}
+                    {connectionStatus === 'connected' && (
+                      <span className="ml-2 text-xs text-green-500">●</span>
+                    )}
+                    {connectionStatus === 'connecting' && (
+                      <span className="ml-2 text-xs text-yellow-500">●</span>
+                    )}
+                    {connectionStatus === 'disconnected' && (
+                      <span className="ml-2 text-xs text-red-500">●</span>
+                    )}
+                  </h2>
                   <p className="text-sm text-gray-500">
                     {activeChatType === 'mentors' ? selectedChat.role : `${selectedChat.members} members`}
                   </p>
@@ -243,27 +336,40 @@ const ProMessages = () => {
 
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
-                        message.sender === 'me'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
-                      }`}
-                    >
-                      <p>{message.content}</p>
-                      <span className="text-xs opacity-70 mt-1 block">
-                        {message.timestamp}
-                      </span>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-gray-500 dark:text-gray-400 p-4">
+                      No messages yet. Start the conversation!
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            message.sender === 'me'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
+                          }`}
+                        >
+                          <p>{message.content}</p>
+                          <span className="text-xs opacity-70 mt-1 block">
+                            {message.timestamp}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </ScrollArea>
 
             {/* Message Input */}
@@ -274,10 +380,11 @@ const ProMessages = () => {
                 </Button>
                 <Input
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Type your message..."
+                  onChange={handleInputChange}
+                  placeholder={connectionStatus === 'connected' ? "Type your message..." : "Connecting..."}
                   className="flex-1"
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  disabled={connectionStatus !== 'connected'}
                 />
                 <Button variant="ghost" size="icon">
                   <ImageIcon className="w-5 h-5" />
@@ -285,7 +392,10 @@ const ProMessages = () => {
                 <Button variant="ghost" size="icon">
                   <Mic className="w-5 h-5" />
                 </Button>
-                <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={!messageInput.trim() || connectionStatus !== 'connected'}
+                >
                   <Send className="w-5 h-5" />
                 </Button>
               </div>

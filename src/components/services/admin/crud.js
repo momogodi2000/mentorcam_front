@@ -38,6 +38,7 @@ export const UserService = {
             const response = await api.post('/users/', userData);
             return response.data;
         } catch (error) {
+            console.error('Error creating user:', error.response?.data || error);
             throw error;
         }
     },
