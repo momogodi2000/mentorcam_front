@@ -73,13 +73,14 @@ const LandingPage = () => {
       name: "Jean-Paul Kamdem",
       role: "Artisan en Menuiserie",
       content: "Grâce à MentorCam, j'ai pu développer mes compétences en menuiserie moderne et doubler ma clientèle.",
-      image: "../../assets/images/avarta.webp"
+      image: require("../../assets/images/avarta.webp"),
+      
     },
     {
       name: "Marie Nguemo",
       role: "Entrepreneuse Tech",
       content: "La plateforme m'a mise en relation avec des mentors qui m'ont guidée dans le lancement de ma startup.",
-      image: "../assets/images/avarta.webp"
+      image: require("../../assets/images/avarta1 (2).png"),
     }
   ];
 
@@ -340,89 +341,89 @@ const LandingPage = () => {
 
 
 {/* About Us Section */}
-<div id="about" className="py-20 bg-white">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="grid md:grid-cols-2 gap-12 items-center">
-      <div className="fade-in-section">
-        <div className="relative">
-          <div className="absolute -top-4 -left-4 w-72 h-72 bg-blue-100 rounded-full opacity-50 blur-3xl"></div>
+  <div id="about" className="py-20 bg-white">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="fade-in-section">
           <div className="relative">
-            <span className="inline-block px-4 py-1 mb-4 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
-              Notre Histoire
-            </span>
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Premier réseau de mentorat 
-              <span className="text-blue-600"> professionnel au Cameroun</span>
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Fondée en 2023, MentorCam est née d'une vision simple : démocratiser l'accès à l'expertise professionnelle au Cameroun. Notre plateforme connecte les talents émergents avec des mentors expérimentés, créant ainsi un écosystème d'apprentissage unique.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <Award className="w-6 h-6 text-blue-600" />
+            <div className="absolute -top-4 -left-4 w-72 h-72 bg-blue-100 rounded-full opacity-50 blur-3xl"></div>
+            <div className="relative">
+              <span className="inline-block px-4 py-1 mb-4 text-sm font-medium text-blue-600 bg-blue-100 rounded-full">
+                Notre Histoire
+              </span>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                Premier réseau de mentorat 
+                <span className="text-blue-600"> professionnel au Cameroun</span>
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Fondée en 2023, MentorCam est née d'une vision simple : démocratiser l'accès à l'expertise professionnelle au Cameroun. Notre plateforme connecte les talents émergents avec des mentors expérimentés, créant ainsi un écosystème d'apprentissage unique.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <Award className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Excellence</h3>
+                    <p className="text-gray-600">Nos mentors sont rigoureusement sélectionnés pour leur expertise et leur engagement.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Excellence</h3>
-                  <p className="text-gray-600">Nos mentors sont rigoureusement sélectionnés pour leur expertise et leur engagement.</p>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Communauté</h3>
+                    <p className="text-gray-600">Une communauté dynamique de professionnels partageant leurs connaissances.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <Globe className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Impact Local</h3>
+                    <p className="text-gray-600">Contribution active au développement professionnel au Cameroun.</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Communauté</h3>
-                  <p className="text-gray-600">Une communauté dynamique de professionnels partageant leurs connaissances.</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <Globe className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Impact Local</h3>
-                  <p className="text-gray-600">Contribution active au développement professionnel au Cameroun.</p>
-                </div>
-              </div>
-            </div>
-            <button 
-                              onClick={() => navigate('/about_us')}
+              <button 
+                                onClick={() => navigate('/about_us')}
 
-            
-            className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all flex items-center">
-              En savoir plus
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </button>
+              
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transform hover:scale-105 transition-all flex items-center">
+                En savoir plus
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4 fade-in-section">
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-6 rounded-2xl">
-            <h4 className="text-4xl font-bold text-blue-600 mb-2">10+</h4>
-            <p className="text-gray-600">Années d'expertise cumulée</p>
+        
+        <div className="grid grid-cols-2 gap-4 fade-in-section">
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-6 rounded-2xl">
+              <h4 className="text-4xl font-bold text-blue-600 mb-2">10+</h4>
+              <p className="text-gray-600">Années d'expertise cumulée</p>
+            </div>
+            <div className="bg-gray-50 p-6 rounded-2xl">
+              <h4 className="text-4xl font-bold text-gray-900 mb-2">95%</h4>
+              <p className="text-gray-600">Taux de satisfaction</p>
+            </div>
           </div>
-          <div className="bg-gray-50 p-6 rounded-2xl">
-            <h4 className="text-4xl font-bold text-gray-900 mb-2">95%</h4>
-            <p className="text-gray-600">Taux de satisfaction</p>
-          </div>
-        </div>
-        <div className="space-y-4 mt-8">
-          <div className="bg-gray-50 p-6 rounded-2xl">
-            <h4 className="text-4xl font-bold text-gray-900 mb-2">24/7</h4>
-            <p className="text-gray-600">Support disponible</p>
-          </div>
-          <div className="bg-blue-50 p-6 rounded-2xl">
-            <h4 className="text-4xl font-bold text-blue-600 mb-2">50+</h4>
-            <p className="text-gray-600">Partenaires</p>
+          <div className="space-y-4 mt-8">
+            <div className="bg-gray-50 p-6 rounded-2xl">
+              <h4 className="text-4xl font-bold text-gray-900 mb-2">24/7</h4>
+              <p className="text-gray-600">Support disponible</p>
+            </div>
+            <div className="bg-blue-50 p-6 rounded-2xl">
+              <h4 className="text-4xl font-bold text-blue-600 mb-2">50+</h4>
+              <p className="text-gray-600">Partenaires</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
 
       {/* Features Section with Cards */}
@@ -555,6 +556,151 @@ const LandingPage = () => {
           </div>
         </div>
       </div>
+
+{/* AI-Powered Skill Mapping Section */}
+    <div className="py-20 bg-gradient-to-b from-blue-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Visualisez Votre Avenir Professionnel
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Découvrez des parcours professionnels adaptés au marché camerounais grâce à notre technologie IA.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="fade-in-section">
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Cartographie des Compétences
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Notre IA analyse vos compétences actuelles et vous propose un plan de développement personnalisé pour atteindre vos objectifs.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Visualisez les relations entre les compétences et les métiers.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Identifiez les mentors qui peuvent vous guider à chaque étape.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Adapté aux réalités du marché camerounais.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="fade-in-section">
+            <img
+              src={require("../../assets/images/1.png")} // Replace with an actual image or illustration
+              alt="Skill Mapping"
+              className="rounded-2xl shadow-lg"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+{/* Blockchain-Based Micro-Credentials Section */}
+    <div className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Certifications Reconnues et Sécurisées
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Obtenez des certifications vérifiables grâce à la technologie blockchain, reconnues localement et internationalement.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="fade-in-section">
+            <img
+              src={require("../../assets/images/2.png")} // Replace with an actual image or illustration
+              alt="Blockchain Certification"
+              className="rounded-2xl shadow-lg"
+            />
+          </div>
+
+          <div className="fade-in-section">
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Pourquoi la Blockchain ?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Nos certifications sont stockées sur la blockchain pour garantir leur authenticité et leur durabilité.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Certifications infalsifiables et sécurisées.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Reconnaissance locale et internationale.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Partagez vos certifications avec les employeurs en un clic.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+{/* Community Resource Pooling & Offline Learning Section */}
+    <div className="py-20 bg-gradient-to-b from-white to-blue-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Apprentissage Collaboratif et Hors Ligne
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Profitez d'un apprentissage collaboratif et accédez à des ressources hors ligne pour surmonter les défis locaux.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="fade-in-section">
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Partage des Ressources
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Mettez en commun des ressources comme l'accès à internet, des espaces de travail, ou du matériel pour réduire les coûts.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Économisez sur les coûts d'apprentissage.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Apprentissage en groupe pour une meilleure collaboration.
+                </li>
+                <li className="flex items-center text-gray-600">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+                  Accédez aux ressources même sans connexion internet.
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="fade-in-section">
+            <img
+              src={require("../../assets/images/3.png")} // Replace with an actual image or illustration
+              alt="Community Resources"
+              className="rounded-2xl shadow-lg"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
 
       {/* Testimonials Section */}
       <div id="testimonials" className="py-20 bg-blue-50">
