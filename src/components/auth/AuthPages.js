@@ -295,7 +295,7 @@ const AuthPages = ({ isSignUp = false }) => {
                 className="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
               >
                 <img
-                  src="/api/placeholder/24/24"
+                  src={require("../../assets/images/google.png")}
                   alt="Google"
                   className="w-6 h-6 mr-2"
                 />
@@ -306,7 +306,7 @@ const AuthPages = ({ isSignUp = false }) => {
                 className="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
               >
                 <img
-                  src="/api/placeholder/24/24"
+                  src={require("../../assets/images/LinkedIn.png")}
                   alt="LinkedIn"
                   className="w-6 h-6 mr-2"
                 />
