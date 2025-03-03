@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Send, Paperclip, Mic, Video, Image as ImageIcon, Camera, Users, Hash, ChevronRight, Phone, VideoIcon as VideoCall } from 'lucide-react';
+import { Search, Send, Paperclip, Mic, Video, Image as ImageIcon, Camera, Users, Hash, ChevronRight, Phone, VideoIcon as VideoCall, Plus } from 'lucide-react';
 import ProfessionalLayout from '../professionnal_layout';
 import { Card, CardContent } from '../../../ui/card';
 import { ScrollArea } from '../../../ui/scroll-area';
@@ -10,6 +10,14 @@ import { ChatWebSocket, chatAPI } from '../../../lib/chatWebSocket';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { useToast } from "../../../ui/use-toast";
 import axiosInstance from '../../../services/backend_connection';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../../../ui/dialog_2";
 
 const ProMessages = () => {
   const { toast } = useToast();
@@ -27,10 +35,14 @@ const ProMessages = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userToken, setUserToken] = useState('');
+  const [showCreateCommunityDialog, setShowCreateCommunityDialog] = useState(false);
+  const [newCommunityName, setNewCommunityName] = useState('');
+  const [availableAmateurs, setAvailableAmateurs] = useState([]);
 
   const websocketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  // Fetch authentication token
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -45,6 +57,7 @@ const ProMessages = () => {
     }
   }, [toast]);
 
+  // Fetch chat data based on active chat type
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -77,130 +90,107 @@ const ProMessages = () => {
     }
   }, [activeChatType, userToken, toast]);
 
+  // Fetch available amateurs
   useEffect(() => {
-    if (selectedChat && userToken) {
-      const fetchMessages = async () => {
-        try {
-          setLoading(true);
-          const response = await axiosInstance.get(`/chat/messages/${selectedChat.room_id}/`);
-          setMessages(response.data.messages || []);
-          
-          await axiosInstance.post(`/chat/mark-read/${selectedChat.room_id}/`);
-          
-          if (activeChatType === 'mentors') {
-            setMentors(prevMentors => 
-              prevMentors.map(mentor => 
-                mentor.room_id === selectedChat.room_id ? { ...mentor, unread: 0 } : mentor
-              )
-            );
-          } else {
-            setCommunities(prevCommunities => 
-              prevCommunities.map(community => 
-                community.room_id === selectedChat.room_id ? { ...community, unread: 0 } : community
-              )
-            );
-          }
-          setLoading(false);
-        } catch (err) {
-          console.error('Failed to fetch messages:', err);
-          setError(`Failed to load messages: ${err.response?.data?.error || err.message}`);
-          setLoading(false);
-          toast({
-            title: "Error",
-            description: "Failed to load messages. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      };
-
-      fetchMessages();
-
-      if (websocketRef.current) {
-        websocketRef.current.disconnect();
-      }
-      
-      websocketRef.current = new ChatWebSocket(
-        selectedChat.room_id,
-        userToken,
-        handleWebSocketMessage,
-        handleStatusChange
-      );
-      
-      websocketRef.current.connect();
-      
-      return () => {
-        if (websocketRef.current) {
-          websocketRef.current.disconnect();
-        }
-      };
-    }
-  }, [selectedChat, activeChatType, userToken, toast]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleWebSocketMessage = useCallback((data) => {
-    if (data.type === 'chat_message') {
-      setMessages(prevMessages => [...prevMessages, data.message]);
-      
-      if (data.message.sender_id !== getCurrentUserId()) {
-        axiosInstance.post(`/chat/mark-read/${selectedChat.room_id}/`)
-          .catch(err => {
-            console.error('Failed to mark message as read:', err);
-          });
-      }
-    } else if (data.type === 'typing') {
-      setIsTyping(true);
-      
-      if (typingTimer) {
-        clearTimeout(typingTimer);
-      }
-      
-      const timer = setTimeout(() => {
-        setIsTyping(false);
-      }, 3000);
-      
-      setTypingTimer(timer);
-    } else if (data.type === 'chat_history') {
-      setMessages(data.messages || []);
-    }
-  }, [selectedChat, typingTimer]);
-
-  const getCurrentUserId = () => {
-    const userData = localStorage.getItem('userData');
-    if (userData) {
+    const fetchAvailableAmateurs = async () => {
       try {
-        const parsedData = JSON.parse(userData);
-        return parsedData.id;
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        return null;
+        const response = await axiosInstance.get('/chat/available-amateurs/');
+        setAvailableAmateurs(response.data.amateurs || []);
+      } catch (err) {
+        console.error('Failed to fetch available amateurs:', err);
+        toast({
+          title: "Error",
+          description: "Failed to load available amateurs. Please try again later.",
+          variant: "destructive",
+        });
       }
+    };
+
+    if (userToken) {
+      fetchAvailableAmateurs();
     }
-    return null;
+  }, [userToken, toast]);
+
+  // Handle creating a new community
+  const handleCreateCommunity = async () => {
+    if (!newCommunityName.trim()) {
+      toast({
+        title: "Error",
+        description: "Community name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await chatAPI.createCommunityRoom(newCommunityName);
+      setCommunities(prev => [...prev, response]);
+      setShowCreateCommunityDialog(false);
+      setNewCommunityName('');
+      toast({
+        title: "Success",
+        description: "Community created successfully.",
+        variant: "default",
+      });
+    } catch (err) {
+      console.error('Failed to create community:', err);
+      toast({
+        title: "Error",
+        description: "Failed to create community. Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleStatusChange = useCallback((status, code) => {
-    setConnectionStatus(status);
-    
-    if (status === 'failed') {
-      setError('Connection failed. Please try refreshing the page.');
-      toast({
-        title: "Connection Failed",
-        description: "Could not connect to chat server. Please try again later.",
-        variant: "destructive",
-      });
-    } else if (status === 'disconnected' && code === 4003) {
-      setError('Unauthorized access. Please log in again.');
-      toast({
-        title: "Authentication Error",
-        description: "Your session has expired. Please log in again.",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+  // Dismiss error message
+  const dismissError = () => {
+    setError(null);
+  };
 
+  // Render individual chat message
+  const renderMessage = (message) => {
+    const isCurrentUser = message.sender_id === getCurrentUserId() || message.sender === 'me';
+    
+    return (
+      <div
+        key={message.id}
+        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+      >
+        {!isCurrentUser && (
+          <Avatar className="mr-2 flex-shrink-0">
+            <AvatarImage src={selectedChat?.profile_picture} />
+            <AvatarFallback>{message.sender?.charAt(0) || 'U'}</AvatarFallback>
+          </Avatar>
+        )}
+        <div
+          className={`max-w-[70%] rounded-lg p-3 ${
+            isCurrentUser
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
+          } ${message.sending ? 'opacity-70' : ''}`}
+        >
+          <p>{message.content}</p>
+          <div className="text-xs opacity-70 mt-1 flex justify-between items-center">
+            <span>{message.timestamp}</span>
+            {isCurrentUser && message.is_read && (
+              <span>✓✓</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Handle typing in the message input
+  const handleTyping = (e) => {
+    setMessageInput(e.target.value);
+    
+    if (websocketRef.current && connectionStatus === 'connected') {
+      websocketRef.current.sendTyping();
+    }
+  };
+
+  // Handle sending a message
   const handleSendMessage = () => {
     if (messageInput.trim() && websocketRef.current && connectionStatus === 'connected') {
       const tempMessage = {
@@ -234,14 +224,22 @@ const ProMessages = () => {
     }
   };
 
-  const handleTyping = (e) => {
-    setMessageInput(e.target.value);
-    
-    if (websocketRef.current && connectionStatus === 'connected') {
-      websocketRef.current.sendTyping();
+  // Get current user ID from local storage
+  const getCurrentUserId = () => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const parsedData = JSON.parse(userData);
+        return parsedData.id;
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        return null;
+      }
     }
+    return null;
   };
 
+  // Render chat list
   const renderChatList = () => {
     if (loading && !selectedChat) {
       return <div className="p-4 text-center">Loading conversations...</div>;
@@ -334,43 +332,6 @@ const ProMessages = () => {
     }
   };
 
-  const dismissError = () => {
-    setError(null);
-  };
-
-  const renderMessage = (message) => {
-    const isCurrentUser = message.sender_id === getCurrentUserId() || message.sender === 'me';
-    
-    return (
-      <div
-        key={message.id}
-        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-      >
-        {!isCurrentUser && (
-          <Avatar className="mr-2 flex-shrink-0">
-            <AvatarImage src={selectedChat?.profile_picture} />
-            <AvatarFallback>{message.sender?.charAt(0) || 'U'}</AvatarFallback>
-          </Avatar>
-        )}
-        <div
-          className={`max-w-[70%] rounded-lg p-3 ${
-            isCurrentUser
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-800 dark:text-white'
-          } ${message.sending ? 'opacity-70' : ''}`}
-        >
-          <p>{message.content}</p>
-          <div className="text-xs opacity-70 mt-1 flex justify-between items-center">
-            <span>{message.timestamp}</span>
-            {isCurrentUser && message.is_read && (
-              <span>✓✓</span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <ProfessionalLayout 
       isDarkMode={isDarkMode}
@@ -420,6 +381,17 @@ const ProMessages = () => {
           <ScrollArea className="flex-1">
             {renderChatList()}
           </ScrollArea>
+
+          {/* Create Community Button */}
+          <div className="p-4 border-t dark:border-gray-700">
+            <Button
+              className="w-full"
+              onClick={() => setShowCreateCommunityDialog(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Community
+            </Button>
+          </div>
         </div>
 
         {/* Main Chat Area */}
@@ -551,6 +523,31 @@ const ProMessages = () => {
           </div>
         )}
       </div>
+
+      {/* Create Community Dialog */}
+      <Dialog open={showCreateCommunityDialog} onOpenChange={setShowCreateCommunityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Community</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new community.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={newCommunityName}
+            onChange={(e) => setNewCommunityName(e.target.value)}
+            placeholder="Community Name"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateCommunityDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCommunity}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ProfessionalLayout>
   );
 };

@@ -241,5 +241,15 @@ export const chatAPI = {
       console.error('Error creating community room:', error);
       throw error;
     }
+  },
+
+  getAvailableAmateurs: async () => {
+    try {
+      const response = await axiosInstance.get('/chat/available-amateurs/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching available amateurs:', error);
+      throw error;
+    }
   }
 };
