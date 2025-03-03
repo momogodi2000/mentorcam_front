@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Send, Paperclip, Mic, Video, Image as ImageIcon, Camera, Users, Hash, ChevronRight, Phone, VideoIcon as VideoCall } from 'lucide-react';
 import ProfessionalLayout from '../professionnal_layout';
 import { Card, CardContent } from '../../../ui/card';
@@ -9,7 +9,7 @@ import { Input } from '../../../ui/input';
 import { ChatWebSocket, chatAPI } from '../../../lib/chatWebSocket';
 import { Alert, AlertDescription } from '../../../ui/alert';
 import { useToast } from "../../../ui/use-toast";
-import axiosInstance from '../../../services/backend_connection'; // Import the axios instance
+import axiosInstance from '../../../services/backend_connection';
 
 const ProMessages = () => {
   const { toast } = useToast();
@@ -17,23 +17,22 @@ const ProMessages = () => {
   const [isEnglish, setIsEnglish] = useState(true);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageInput, setMessageInput] = useState('');
-  const [activeChatType, setActiveChatType] = useState('mentors'); // 'mentors' or 'communities'
-  const [messages, setMessages] = useState([]);
+  const [activeChatType, setActiveChatType] = useState('mentors');
   const [mentors, setMentors] = useState([]);
   const [communities, setCommunities] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimer, setTypingTimer] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userToken, setUserToken] = useState('');
-  
-  const webSocketRef = useRef(null);
+
+  const websocketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Get auth token on component mount
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('authToken');
     if (token) {
       setUserToken(token);
     } else {
@@ -44,157 +43,130 @@ const ProMessages = () => {
         variant: "destructive",
       });
     }
-  }, []);
+  }, [toast]);
 
-  // Fetch mentors and communities on component mount
   useEffect(() => {
-    const fetchChats = async () => {
+    const fetchData = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
+        setError(null);
         
         if (activeChatType === 'mentors') {
-          const mentorsData = await axiosInstance.get('/chat/mentors/');
-          setMentors(mentorsData.data || []);
+          const response = await axiosInstance.get('/chat/mentors/');
+          setMentors(response.data.mentors || []);
         } else {
-          const communitiesData = await axiosInstance.get('/chat/communities/');
-          setCommunities(communitiesData.data || []);
+          const response = await axiosInstance.get('/chat/communities/');
+          setCommunities(response.data.communities || []);
         }
         
-        setIsLoading(false);
-      } catch (error) {
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch chats:', err);
+        setError(`Failed to load chat data: ${err.response?.data?.error || err.message}`);
+        setLoading(false);
         toast({
           title: "Error",
-          description: "Failed to load chats. Please try again later.",
+          description: "Failed to load chat data. Please try again later.",
           variant: "destructive",
         });
-        console.error('Error fetching chats:', error);
-        setError(`Failed to load chat data: ${error.response?.data?.error || error.message}`);
-        setIsLoading(false);
       }
     };
 
     if (userToken) {
-      fetchChats();
+      fetchData();
     }
   }, [activeChatType, userToken, toast]);
 
-  // Connect to WebSocket when a chat is selected
   useEffect(() => {
     if (selectedChat && userToken) {
-      // First load messages
-      const loadMessages = async () => {
-        setIsLoading(true);
+      const fetchMessages = async () => {
         try {
-          const response = await axiosInstance.get(`/chat/messages/${selectedChat.room_id || selectedChat.id}/`);
-          setMessages(response.data || []);
+          setLoading(true);
+          const response = await axiosInstance.get(`/chat/messages/${selectedChat.room_id}/`);
+          setMessages(response.data.messages || []);
           
-          // Mark messages as read
-          await axiosInstance.post(`/chat/mark-read/${selectedChat.room_id || selectedChat.id}/`);
+          await axiosInstance.post(`/chat/mark-read/${selectedChat.room_id}/`);
           
-          // Update the unread count in the chat list
           if (activeChatType === 'mentors') {
             setMentors(prevMentors => 
               prevMentors.map(mentor => 
-                mentor.id === selectedChat.id || mentor.room_id === selectedChat.room_id 
-                  ? { ...mentor, unread: 0 } 
-                  : mentor
+                mentor.room_id === selectedChat.room_id ? { ...mentor, unread: 0 } : mentor
               )
             );
           } else {
             setCommunities(prevCommunities => 
               prevCommunities.map(community => 
-                community.id === selectedChat.id || community.room_id === selectedChat.room_id 
-                  ? { ...community, unread: 0 } 
-                  : community
+                community.room_id === selectedChat.room_id ? { ...community, unread: 0 } : community
               )
             );
           }
-        } catch (error) {
+          setLoading(false);
+        } catch (err) {
+          console.error('Failed to fetch messages:', err);
+          setError(`Failed to load messages: ${err.response?.data?.error || err.message}`);
+          setLoading(false);
           toast({
             title: "Error",
             description: "Failed to load messages. Please try again later.",
             variant: "destructive",
           });
-          console.error('Error loading messages:', error);
-          setError(`Failed to load messages: ${error.response?.data?.error || error.message}`);
-        } finally {
-          setIsLoading(false);
         }
       };
 
-      loadMessages();
+      fetchMessages();
 
-      // Disconnect previous connection if exists
-      if (webSocketRef.current) {
-        webSocketRef.current.disconnect();
+      if (websocketRef.current) {
+        websocketRef.current.disconnect();
       }
       
-      // Create new WebSocket connection
-      webSocketRef.current = new ChatWebSocket(
-        selectedChat.room_id || selectedChat.id,
+      websocketRef.current = new ChatWebSocket(
+        selectedChat.room_id,
         userToken,
         handleWebSocketMessage,
         handleStatusChange
       );
       
-      webSocketRef.current.connect();
+      websocketRef.current.connect();
       
       return () => {
-        // Disconnect when component unmounts or chat changes
-        if (webSocketRef.current) {
-          webSocketRef.current.disconnect();
-          webSocketRef.current = null;
+        if (websocketRef.current) {
+          websocketRef.current.disconnect();
         }
       };
     }
   }, [selectedChat, activeChatType, userToken, toast]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle WebSocket message
-  const handleWebSocketMessage = (data) => {
+  const handleWebSocketMessage = useCallback((data) => {
     if (data.type === 'chat_message') {
-      setMessages(prevMessages => [...prevMessages, data.message || {
-        id: Date.now(),
-        sender_id: data.sender_id,
-        sender: data.sender_name,
-        content: data.message,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        is_read: false
-      }]);
+      setMessages(prevMessages => [...prevMessages, data.message]);
       
-      // If the message is not from the current user, mark it as read
-      if ((data.message?.sender_id || data.sender_id) !== getCurrentUserId()) {
-        axiosInstance.post(`/chat/mark-read/${selectedChat.room_id || selectedChat.id}/`)
+      if (data.message.sender_id !== getCurrentUserId()) {
+        axiosInstance.post(`/chat/mark-read/${selectedChat.room_id}/`)
           .catch(err => {
             console.error('Failed to mark message as read:', err);
           });
       }
     } else if (data.type === 'typing') {
-      // Handle typing indicator
       setIsTyping(true);
       
-      // Clear previous timer if exists
       if (typingTimer) {
         clearTimeout(typingTimer);
       }
       
-      // Set typing indicator to false after 3 seconds
       const timer = setTimeout(() => {
         setIsTyping(false);
       }, 3000);
       
       setTypingTimer(timer);
     } else if (data.type === 'chat_history') {
-      // Initial history load from WebSocket
       setMessages(data.messages || []);
     }
-  };
+  }, [selectedChat, typingTimer]);
 
-  // Get current user ID from local storage
   const getCurrentUserId = () => {
     const userData = localStorage.getItem('userData');
     if (userData) {
@@ -209,8 +181,7 @@ const ProMessages = () => {
     return null;
   };
 
-  // Handle WebSocket status changes
-  const handleStatusChange = (status, code) => {
+  const handleStatusChange = useCallback((status, code) => {
     setConnectionStatus(status);
     
     if (status === 'failed') {
@@ -228,11 +199,10 @@ const ProMessages = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const handleSendMessage = () => {
-    if (messageInput.trim() && webSocketRef.current && connectionStatus === 'connected') {
-      // Create a temporary message to show immediately
+    if (messageInput.trim() && websocketRef.current && connectionStatus === 'connected') {
       const tempMessage = {
         id: `temp-${Date.now()}`,
         sender_id: getCurrentUserId(),
@@ -245,19 +215,18 @@ const ProMessages = () => {
       
       setMessages(prevMessages => [...prevMessages, tempMessage]);
       
-      // Send via WebSocket
-      const success = webSocketRef.current.sendMessage(messageInput);
+      const success = websocketRef.current.sendMessage(messageInput);
       
       if (success) {
         setMessageInput('');
       } else {
+        setError('Failed to send message. Please check your connection.');
         toast({
           title: "Message Not Sent",
           description: "Could not send message. Please check your connection.",
           variant: "destructive",
         });
         
-        // Remove the temporary message
         setMessages(prevMessages => 
           prevMessages.filter(msg => msg.id !== tempMessage.id)
         );
@@ -268,18 +237,107 @@ const ProMessages = () => {
   const handleTyping = (e) => {
     setMessageInput(e.target.value);
     
-    // Send typing indicator via WebSocket
-    if (webSocketRef.current && connectionStatus === 'connected') {
-      webSocketRef.current.sendTyping();
+    if (websocketRef.current && connectionStatus === 'connected') {
+      websocketRef.current.sendTyping();
     }
   };
 
-  // Reset error message
+  const renderChatList = () => {
+    if (loading && !selectedChat) {
+      return <div className="p-4 text-center">Loading conversations...</div>;
+    }
+    
+    if (error && !selectedChat && (mentors.length === 0 && communities.length === 0)) {
+      return <div className="p-4 text-center text-red-500">{error}</div>;
+    }
+    
+    if (activeChatType === 'mentors' && mentors.length === 0) {
+      return <div className="p-4 text-center text-gray-500">No mentor conversations yet</div>;
+    }
+    
+    if (activeChatType === 'communities' && communities.length === 0) {
+      return <div className="p-4 text-center text-gray-500">No community conversations available</div>;
+    }
+    
+    if (activeChatType === 'mentors') {
+      return (
+        <div className="space-y-1 p-2">
+          {mentors.map((mentor) => (
+            <div
+              key={mentor.id}
+              onClick={() => setSelectedChat(mentor)}
+              className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                selectedChat?.room_id === mentor.room_id ? 'bg-gray-100 dark:bg-gray-800' : ''
+              }`}
+            >
+              <div className="relative">
+                <Avatar>
+                  <AvatarImage src={mentor.profile_picture} />
+                  <AvatarFallback>{mentor.name?.charAt(0) || 'M'}</AvatarFallback>
+                </Avatar>
+                <span
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+                    mentor.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                  }`}
+                />
+              </div>
+              <div className="ml-3 flex-1">
+                <div className="flex justify-between">
+                  <span className="font-medium dark:text-white">{mentor.name}</span>
+                  <span className="text-xs text-gray-500">{mentor.last_message_time || 'New'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-sm text-gray-500 truncate">{mentor.last_message || mentor.role || 'Mentor'}</p>
+                  {mentor.unread > 0 && (
+                    <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                      {mentor.unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      return (
+        <div className="space-y-1 p-2">
+          {communities.map((community) => (
+            <div
+              key={community.id}
+              onClick={() => setSelectedChat(community)}
+              className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                selectedChat?.room_id === community.room_id ? 'bg-gray-100 dark:bg-gray-800' : ''
+              }`}
+            >
+              <Avatar>
+                <AvatarFallback><Hash className="w-4 h-4" /></AvatarFallback>
+              </Avatar>
+              <div className="ml-3 flex-1">
+                <div className="flex justify-between">
+                  <span className="font-medium dark:text-white">{community.name}</span>
+                  <span className="text-xs text-gray-500">{community.members} members</span>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-sm text-gray-500 truncate">{community.last_message || 'Community chat'}</p>
+                  {community.unread > 0 && (
+                    <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                      {community.unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  };
+
   const dismissError = () => {
     setError(null);
   };
 
-  // Message content renderer
   const renderMessage = (message) => {
     const isCurrentUser = message.sender_id === getCurrentUserId() || message.sender === 'me';
     
@@ -290,8 +348,8 @@ const ProMessages = () => {
       >
         {!isCurrentUser && (
           <Avatar className="mr-2 flex-shrink-0">
-            <AvatarImage src={selectedChat?.avatar} />
-            <AvatarFallback>{message.sender?.charAt(0) || selectedChat?.name?.charAt(0) || 'U'}</AvatarFallback>
+            <AvatarImage src={selectedChat?.profile_picture} />
+            <AvatarFallback>{message.sender?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
         )}
         <div
@@ -360,88 +418,7 @@ const ProMessages = () => {
 
           {/* Chat List */}
           <ScrollArea className="flex-1">
-            {isLoading && !selectedChat ? (
-              <div className="p-4 text-center">Loading conversations...</div>
-            ) : error && !selectedChat && (mentors.length === 0 && communities.length === 0) ? (
-              <div className="p-4 text-center text-red-500">{error}</div>
-            ) : activeChatType === 'mentors' ? (
-              <div className="space-y-1 p-2">
-                {mentors.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No mentor conversations yet</div>
-                ) : (
-                  mentors.map((mentor) => (
-                    <div
-                      key={mentor.id || mentor.room_id}
-                      onClick={() => setSelectedChat(mentor)}
-                      className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                        selectedChat?.id === mentor.id || selectedChat?.room_id === mentor.room_id ? 'bg-gray-100 dark:bg-gray-800' : ''
-                      }`}
-                    >
-                      <div className="relative">
-                        <Avatar>
-                          <AvatarImage src={mentor.avatar || mentor.profile_picture} />
-                          <AvatarFallback>{mentor.name?.charAt(0) || 'M'}</AvatarFallback>
-                        </Avatar>
-                        <span
-                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                            mentor.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
-                          }`}
-                        />
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between">
-                          <span className="font-medium dark:text-white">{mentor.name}</span>
-                          <span className="text-xs text-gray-500">{mentor.lastSeen || mentor.last_message_time || 'New'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <p className="text-sm text-gray-500 truncate">{mentor.lastMessage || mentor.last_message || mentor.role || 'Mentor'}</p>
-                          {mentor.unread > 0 && (
-                            <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
-                              {mentor.unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1 p-2">
-                {communities.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">No community conversations available</div>
-                ) : (
-                  communities.map((community) => (
-                    <div
-                      key={community.id || community.room_id}
-                      onClick={() => setSelectedChat(community)}
-                      className={`flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                        selectedChat?.id === community.id || selectedChat?.room_id === community.room_id ? 'bg-gray-100 dark:bg-gray-800' : ''
-                      }`}
-                    >
-                      <Avatar>
-                        <AvatarImage src={community.avatar} />
-                        <AvatarFallback><Hash className="w-4 h-4" /></AvatarFallback>
-                      </Avatar>
-                      <div className="ml-3 flex-1">
-                        <div className="flex justify-between">
-                          <span className="font-medium dark:text-white">{community.name}</span>
-                          <span className="text-xs text-gray-500">{community.members} members</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <p className="text-sm text-gray-500 truncate">{community.lastMessage || community.last_message || 'Community chat'}</p>
-                          {community.unread > 0 && (
-                            <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
-                              {community.unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            {renderChatList()}
           </ScrollArea>
         </div>
 
@@ -452,7 +429,7 @@ const ProMessages = () => {
             <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
               <div className="flex items-center">
                 <Avatar>
-                  <AvatarImage src={selectedChat.avatar || selectedChat.profile_picture} />
+                  <AvatarImage src={selectedChat.profile_picture} />
                   <AvatarFallback>
                     {activeChatType === 'mentors' 
                       ? (selectedChat.name?.charAt(0) || 'M') 
@@ -460,21 +437,15 @@ const ProMessages = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <h2 className="font-medium dark:text-white">
-                    {selectedChat.name}
-                    {connectionStatus === 'connected' && (
-                      <span className="ml-2 text-xs text-green-500">●</span>
-                    )}
-                    {connectionStatus === 'connecting' && (
-                      <span className="ml-2 text-xs text-yellow-500">●</span>
-                    )}
-                    {connectionStatus === 'disconnected' && (
-                      <span className="ml-2 text-xs text-red-500">●</span>
-                    )}
-                  </h2>
+                  <h2 className="font-medium dark:text-white">{selectedChat.name}</h2>
                   <p className="text-sm text-gray-500">
-                    {activeChatType === 'mentors' ? (selectedChat.role || 'Mentor') : `${selectedChat.members} members`}
+                    {activeChatType === 'mentors' ? (selectedChat.role || 'Mentor') : `${selectedChat.members || 0} members`}
                   </p>
+                  {connectionStatus !== 'connected' && (
+                    <span className="text-xs text-amber-500">
+                      {connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -503,27 +474,26 @@ const ProMessages = () => {
 
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              {loading && !messages.length ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">Loading messages...</p>
+                </div>
+              ) : !messages.length ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-gray-500 mb-2">No messages yet</p>
+                    <p className="text-sm text-gray-400">Be the first to send a message!</p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="text-center text-gray-500 dark:text-gray-400 p-4">
-                      No messages yet. Start the conversation!
+                  {messages.map(renderMessage)}
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 dark:bg-gray-800 dark:text-white rounded-lg p-3 max-w-[70%]">
+                        <p className="text-gray-500">Typing...</p>
+                      </div>
                     </div>
-                  ) : (
-                    <>
-                      {messages.map(renderMessage)}
-                      {isTyping && (
-                        <div className="flex justify-start">
-                          <div className="bg-gray-100 dark:bg-gray-800 dark:text-white rounded-lg p-3 max-w-[70%]">
-                            <p className="text-gray-500">Typing...</p>
-                          </div>
-                        </div>
-                      )}
-                    </>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
@@ -539,7 +509,7 @@ const ProMessages = () => {
                 <Input
                   value={messageInput}
                   onChange={handleTyping}
-                  placeholder={connectionStatus === 'connected' ? "Type your message..." : "Connecting..."}
+                  placeholder="Type your message..."
                   className="flex-1"
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   disabled={connectionStatus !== 'connected'}

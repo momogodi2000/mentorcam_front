@@ -16,6 +16,9 @@ const BeginnerLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsE
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
+  
+  // Default profile image
+  const defaultProfileImage =require("../../../assets/images/avarta.webp");
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -103,7 +106,17 @@ const BeginnerLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsE
                 <CardContent className="p-3">
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={currentUser?.profile_picture} />
+                      {currentUser?.profile_picture ? (
+                        <AvatarImage 
+                          src={currentUser.profile_picture} 
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = defaultProfileImage;
+                          }} 
+                        />
+                      ) : (
+                        <AvatarImage src={defaultProfileImage} />
+                      )}
                       <AvatarFallback className="bg-blue-600 text-white">
                         {getUserInitials()}
                       </AvatarFallback>

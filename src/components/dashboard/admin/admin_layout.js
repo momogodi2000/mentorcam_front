@@ -14,6 +14,9 @@ const AdminLayout = ({ children }) => {
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Default profile image URL (can be replaced with an actual image path)
+  const defaultProfileImage = require("../../../assets/images/avarta1 (1).png");
 
   // Fetch current user data on component mount
   useEffect(() => {
@@ -61,6 +64,14 @@ const AdminLayout = ({ children }) => {
 
   const handleImageError = () => {
     setImageError(true);
+  };
+
+  // Function to get the appropriate profile image
+  const getProfileImage = () => {
+    if (currentUser?.profile_picture && !imageError) {
+      return currentUser.profile_picture;
+    }
+    return defaultProfileImage;
   };
 
   return (
@@ -119,7 +130,7 @@ const AdminLayout = ({ children }) => {
                 <div className="relative">
                   {currentUser?.profile_picture && !imageError ? (
                     <img
-                      src={currentUser.profile_picture}
+                      src={getProfileImage()}
                       alt="Profile"
                       className="w-14 h-14 rounded-full object-cover border-2 border-white"
                       onError={handleImageError}
@@ -258,7 +269,7 @@ const AdminLayout = ({ children }) => {
               <div className="relative md:hidden">
                 {currentUser?.profile_picture && !imageError ? (
                   <img
-                    src={currentUser.profile_picture}
+                    src={getProfileImage()}
                     alt="Profile"
                     className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
                     onError={handleImageError}

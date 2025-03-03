@@ -16,6 +16,9 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
+    // Default profile image URL - can be set to a local asset path
+    const defaultProfileImage = require("../../../assets/images/avarta.webp"); 
+
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
@@ -86,9 +89,17 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
                                 onError={handleImageError}
                             />
                         ) : (
-                            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                                <UserCircle className="w-8 h-8 text-white" />
-                            </div>
+                            currentUser && defaultProfileImage ? (
+                                <img 
+                                    src={defaultProfileImage}
+                                    alt="Default Profile"
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                                    <UserCircle className="w-8 h-8 text-white" />
+                                </div>
+                            )
                         )}
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
                     </div>

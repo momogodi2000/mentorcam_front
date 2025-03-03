@@ -17,7 +17,11 @@ const InstitutionLayout = ({ children, isEnglish, setIsEnglish }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
+  
+  // Default profile image URL
+  const defaultProfileImage =require("../../../assets/images/avarta.webp");
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,10 +57,10 @@ const InstitutionLayout = ({ children, isEnglish, setIsEnglish }) => {
 
   const menuItems = [
     { icon: ChartBar, label: isEnglish ? 'Dashboard' : 'Tableau de Bord', path: '/institut_dashboard' },
-    { icon: Users, label: isEnglish ? 'Talent Pool' : 'Vivier de Talents', path: '/talent' },
+   // { icon: Users, label: isEnglish ? 'Talent Pool' : 'Vivier de Talents', path: '/talent' },
     { icon: Briefcase, label: isEnglish ? 'Job Offers' : 'Offres d\'Emploi', path: '/job' },
     { icon: Calendar, label: isEnglish ? 'Events' : 'Événements', path: '/event' },
-    { icon: UserCheck, label: isEnglish ? 'Mentorship' : 'Mentorat', path: '/Mentorship' },
+   // { icon: UserCheck, label: isEnglish ? 'Mentorship' : 'Mentorat', path: '/Mentorship' },
     { icon: Target, label: isEnglish ? 'Recruitment' : 'Recrutement', path: '/Recruitment' },
     { icon: UserPlus, label: isEnglish ? 'Job Applicants' : 'Candidats', path: '/job_apply' },
     { icon: FileText, label: isEnglish ? 'Reports' : 'Rapports', path: '/rapport' },
@@ -81,6 +85,18 @@ const InstitutionLayout = ({ children, isEnglish, setIsEnglish }) => {
     const names = currentUser.full_name ? currentUser.full_name.split(' ') : [];
     return names.length >= 2 ? `${names[0][0]}${names[1][0]}`.toUpperCase() 
       : currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'U';
+  };
+  
+  const handleImageError = () => {
+    setImageError(true);
+  };
+  
+  // Function to get the appropriate profile image
+  const getProfileImage = () => {
+    if (currentUser?.profile_picture && !imageError) {
+      return currentUser.profile_picture;
+    }
+    return defaultProfileImage;
   };
 
   const sidebarVariants = {
@@ -165,7 +181,10 @@ const InstitutionLayout = ({ children, isEnglish, setIsEnglish }) => {
                   <CardContent className="p-3">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={currentUser?.profile_picture} />
+                        <AvatarImage 
+                          src={getProfileImage()} 
+                          onError={handleImageError}
+                        />
                         <AvatarFallback className="bg-blue-600 text-white">
                           {getUserInitials()}
                         </AvatarFallback>
