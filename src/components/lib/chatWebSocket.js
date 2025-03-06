@@ -1,6 +1,7 @@
 // chatWebSocket.js
 import axiosInstance from '../services/backend_connection';
 
+// chatWebSocket.js
 export class ChatWebSocket {
   constructor(roomId, token, onMessageCallback, onStatusChangeCallback) {
     this.roomId = roomId;
@@ -25,11 +26,8 @@ export class ChatWebSocket {
     this.isConnecting = true;
     this.onStatusChangeCallback('connecting');
     
-    // Get the protocol (wss:// for HTTPS, ws:// for HTTP)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Get the host
     const host = window.location.host;
-    // Build the WebSocket URL with authentication token
     const wsUrl = `${protocol}//${host}/ws/chat/${this.roomId}/?token=${this.token}`;
     
     try {
@@ -42,10 +40,7 @@ export class ChatWebSocket {
         this.isConnected = true;
         this.onStatusChangeCallback('connected');
         
-        // Set up heartbeat to keep connection alive
         this.setupHeartbeat();
-        
-        // Fetch initial chat history through regular API
         this.fetchInitialMessages();
       };
       
@@ -54,10 +49,8 @@ export class ChatWebSocket {
           const data = JSON.parse(event.data);
           this.onMessageCallback(data);
           
-          // If this is a pong response, don't process further
           if (data.type === 'pong') return;
           
-          // For normal messages, mark as read automatically
           if (data.type === 'chat_message' && this.isConnected) {
             this.markMessagesRead();
           }
@@ -73,18 +66,15 @@ export class ChatWebSocket {
         this.socket = null;
         this.onStatusChangeCallback('disconnected', event.code);
         
-        // Clear heartbeat interval
         if (this.heartbeatInterval) {
           clearInterval(this.heartbeatInterval);
           this.heartbeatInterval = null;
         }
         
-        // Only reconnect for certain close codes
         if (event.code !== 4003 && event.code !== 1000 && this.connectionAttempts < this.maxReconnectAttempts) {
           this.connectionAttempts++;
           this.reconnectTimeoutId = setTimeout(() => this.connect(), this.reconnectInterval * this.connectionAttempts);
         } else if (event.code === 4003) {
-          // Authentication error - trigger refresh token or redirect to login
           this.onStatusChangeCallback('auth_error');
         } else {
           this.onStatusChangeCallback('failed');
@@ -102,7 +92,6 @@ export class ChatWebSocket {
   }
   
   setupHeartbeat() {
-    // Send a ping every 30 seconds to keep the connection alive
     this.heartbeatInterval = setInterval(() => {
       if (this.socket && this.isConnected) {
         this.socket.send(JSON.stringify({
@@ -156,19 +145,16 @@ export class ChatWebSocket {
   }
   
   disconnect() {
-    // Clear any pending reconnect attempts
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
       this.reconnectTimeoutId = null;
     }
     
-    // Clear heartbeat interval
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
     
-    // Close the socket with a normal closure code
     if (this.socket) {
       this.socket.close(1000, 'User navigated away');
       this.socket = null;
@@ -177,10 +163,8 @@ export class ChatWebSocket {
     }
   }
   
-  // Method to handle token refresh
   updateToken(newToken) {
     this.token = newToken;
-    // If connected, reconnect with new token
     if (this.isConnected) {
       this.disconnect();
       this.connect();
@@ -188,7 +172,6 @@ export class ChatWebSocket {
   }
 }
 
-// API functions for chat using axiosInstance
 export const chatAPI = {
   getMentorChats: async () => {
     try {
@@ -230,7 +213,6 @@ export const chatAPI = {
     }
   },
   
-  // Add a method to create community rooms if needed
   createCommunityRoom: async (roomName) => {
     try {
       const response = await axiosInstance.post('/chat/communities/create/', {
