@@ -6,11 +6,36 @@ export const getUser = async () => {
     try {
         const response = await axiosInstance.get('/current-user/');
         const profilePicture = response.data.profile_picture;
+        
+        // Check if profile picture exists before constructing the URL
+        const fullProfilePicUrl = profilePicture
+            ? `${API_BASE_URL}${profilePicture}`
+            : null;
+            
+        // Test if the image is accessible by preloading it
+        let validProfilePic = fullProfilePicUrl;
+        if (fullProfilePicUrl) {
+            try {
+                // Create a new image object to test loading
+                const img = new Image();
+                img.src = fullProfilePicUrl;
+                
+                // Set a short timeout to check if image loads
+                await new Promise((resolve, reject) => {
+                    img.onload = () => resolve(true);
+                    img.onerror = () => reject(false);
+                    // Timeout after 3 seconds
+                    setTimeout(() => reject(false), 3000);
+                });
+            } catch (err) {
+                console.warn('Profile image not accessible:', fullProfilePicUrl);
+                validProfilePic = null;
+            }
+        }
+        
         return {
             ...response.data,
-            profile_picture: profilePicture
-                ? `${API_BASE_URL}${profilePicture}`  // Use the full URL from the backend
-                : null,
+            profile_picture: validProfilePic,
             full_name: response.data.full_name,
             email: response.data.email,
             phone_number: response.data.phone_number,
