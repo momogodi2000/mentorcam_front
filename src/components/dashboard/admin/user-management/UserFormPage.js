@@ -138,26 +138,42 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
     
     setLoading(true);
     
-    // Create FormData if we have a file
+    // Create a copy of formData for API submission
     let dataToSend = { ...formData };
+    
+    // Map confirm_password to password2 for the API (only for new users or password changes)
+    if (dataToSend.confirm_password && dataToSend.password) {
+      dataToSend.password2 = dataToSend.confirm_password;
+    }
     
     // Remove confirm_password from data to send to API
     delete dataToSend.confirm_password;
     
-    // Remove password if it's empty in edit mode
+    // Remove password fields if empty in edit mode
     if (isEditMode && !dataToSend.password) {
       delete dataToSend.password;
+      if (dataToSend.password2) delete dataToSend.password2;
     }
     
+    // Handle file uploads
     if (formData.profile_picture instanceof File) {
       const formDataObj = new FormData();
+      
+      // Add all other fields to FormData
       Object.keys(dataToSend).forEach(key => {
-        if (key === 'profile_picture') {
-          formDataObj.append(key, dataToSend[key]);
-        } else {
-          formDataObj.append(key, dataToSend[key]);
+        // Skip null or undefined values
+        if (dataToSend[key] !== null && dataToSend[key] !== undefined) {
+          if (key === 'profile_picture') {
+            formDataObj.append(key, dataToSend[key]);
+          } else if (typeof dataToSend[key] === 'boolean') {
+            // Convert boolean to string for FormData
+            formDataObj.append(key, dataToSend[key].toString());
+          } else {
+            formDataObj.append(key, dataToSend[key]);
+          }
         }
       });
+      
       dataToSend = formDataObj;
     }
     
@@ -178,8 +194,9 @@ const UserFormPage = ({ onSubmit, onCancel }) => {
       
       if (isStandalone) navigate('/admin/users');
     } catch (error) {
-      toast.error(isEditMode ? 'Failed to update user' : 'Failed to create user');
-      console.error('Save failed:', error);
+      const errorMessage = error.response?.data ? JSON.stringify(error.response.data) : 'Unknown error';
+      toast.error(`${isEditMode ? 'Failed to update user' : 'Failed to create user'}: ${errorMessage}`);
+      console.error('Save failed:', error.response?.data || error);
     } finally {
       setLoading(false);
     }

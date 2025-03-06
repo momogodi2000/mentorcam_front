@@ -175,16 +175,6 @@ const AdminLayout = ({ children }) => {
 
             {/* Bottom Support Card */}
             <div className="absolute bottom-0 w-full space-y-4 p-4 border-t dark:border-gray-700">
-              <motion.div 
-                whileHover={{ scale: 1.02 }}
-                className="flex items-center space-x-3 bg-blue-50 dark:bg-gray-700 p-4 rounded-xl"
-              >
-                <PhoneCall className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  Support: +237 6XX XXX XXX
-                </span>
-              </motion.div>
-
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
