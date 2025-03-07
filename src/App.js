@@ -27,6 +27,8 @@ import SessionsPage from './components/dashboard/beginner/session/new';
 import InstantMessages from './components/dashboard/beginner/messages/amateur_chat';
 import AchievementsPage from './components/dashboard/beginner/achievement/gold';
 import ProfilePage from './components/dashboard/beginner/profile/profile_new';
+import AIChat from './components/dashboard/beginner/AI/ai_chat';
+
 
 
 import CompleteProfile from './components/dashboard/professionnal/profile/proffesional_profile';
@@ -252,6 +254,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="amateur">
               <FindEvents />
+            </ProtectedRoute>
+          }
+        />
+          <Route
+          path="/ai_chat"
+          element={
+            <ProtectedRoute requiredRole="amateur">
+              <AIChat />
             </ProtectedRoute>
           }
         />

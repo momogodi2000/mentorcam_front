@@ -1,7 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, register } from '../../authService';
+import { login, register, socialAuth } from '../../authService';
+
+// Load Google SDK
+const loadGoogleSDK = () => {
+  return new Promise((resolve) => {
+    // Check if SDK is already loaded
+    if (window.gapi) {
+      resolve();
+      return;
+    }
+    
+    // Load Google SDK
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    document.body.appendChild(script);
+  });
+};
+
+// Load LinkedIn SDK
+const loadLinkedInSDK = () => {
+  return new Promise((resolve) => {
+    // Check if SDK is already loaded
+    if (window.IN) {
+      resolve();
+      return;
+    }
+    
+    // Load LinkedIn SDK
+    const script = document.createElement('script');
+    script.src = 'https://platform.linkedin.com/in.js';
+    script.async = true;
+    script.defer = true;
+    script.text = 'api_key={YOUR_LINKEDIN_API_KEY}'; // Replace with your LinkedIn API key
+    script.onload = resolve;
+    document.body.appendChild(script);
+  });
+};
 
 const AuthPages = ({ isSignUp = false }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +57,86 @@ const AuthPages = ({ isSignUp = false }) => {
     phone: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Load social SDKs
+  useEffect(() => {
+    const loadSDKs = async () => {
+      try {
+        await Promise.all([loadGoogleSDK(), loadLinkedInSDK()]);
+        initializeGoogleAuth();
+      } catch (err) {
+        console.error('Error loading social SDKs:', err);
+      }
+    };
+    
+    loadSDKs();
+    
+    // Clean up
+    return () => {
+      // Remove any event listeners if needed
+    };
+  }, []);
+
+  const initializeGoogleAuth = () => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: 'YOUR_GOOGLE_CLIENT_ID', // Replace with your Google client ID
+        callback: handleGoogleResponse,
+      });
+    }
+  };
+
+  const handleGoogleResponse = async (response) => {
+    if (response.credential) {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const authResponse = await socialAuth('google', response.credential, userType);
+        navigate(authResponse.redirect_url);
+      } catch (err) {
+        setError('Google authentication failed. Please try again.');
+        console.error('Google auth error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleLinkedInAuth = async () => {
+    if (window.IN && window.IN.User) {
+      try {
+        setLoading(true);
+        setError('');
+        
+        window.IN.User.authorize(() => {
+          window.IN.API.Raw('/v2/me').result((data) => {
+            // Get LinkedIn access token
+            const token = window.IN.ENV.auth.oauth_token;
+            
+            socialAuth('linkedin', token, userType)
+              .then(response => {
+                navigate(response.redirect_url);
+              })
+              .catch(err => {
+                setError('LinkedIn authentication failed. Please try again.');
+                console.error('LinkedIn auth error:', err);
+              })
+              .finally(() => {
+                setLoading(false);
+              });
+          });
+        });
+      } catch (err) {
+        setError('LinkedIn authentication failed. Please try again.');
+        console.error('LinkedIn auth error:', err);
+        setLoading(false);
+      }
+    } else {
+      setError('LinkedIn SDK not loaded. Please try again later.');
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -29,10 +148,12 @@ const AuthPages = ({ isSignUp = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
   
     // Password validation for signup
     if (isSignUp && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
   
@@ -56,6 +177,16 @@ const AuthPages = ({ isSignUp = false }) => {
     } catch (error) {
       setError('Authentication failed. Please check your credentials and try again.');
       console.error('Authentication error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.prompt();
+    } else {
+      setError('Google sign-in is not available at the moment. Please try again later.');
     }
   };
 
@@ -272,12 +403,15 @@ const AuthPages = ({ isSignUp = false }) => {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300"
+              disabled={loading}
+              className={`w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-300 ${
+                loading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              {isSignUp ? "Create Account" : "Sign In"}
+              {loading ? 'Please wait...' : (isSignUp ? "Create Account" : "Sign In")}
             </button>
 
-            {/* Social login section remains the same */}
+            {/* Social login section updated */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -292,7 +426,9 @@ const AuthPages = ({ isSignUp = false }) => {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
+                onClick={handleGoogleLogin}
                 className="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                disabled={loading}
               >
                 <img
                   src={require("../../assets/images/google.png")}
@@ -303,7 +439,9 @@ const AuthPages = ({ isSignUp = false }) => {
               </button>
               <button
                 type="button"
+                onClick={handleLinkedInAuth}
                 className="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                disabled={loading}
               >
                 <img
                   src={require("../../assets/images/LinkedIn.png")}

@@ -108,6 +108,52 @@ export const register = async (userData) => {
 };
 
 /**
+ * Authenticate user with social provider (Google or LinkedIn)
+ * @param {string} provider The provider name ('google' or 'linkedin')
+ * @param {string} accessToken Access token from the provider
+ * @param {string} userType User type (only used for new registrations)
+ * @returns {Promise} Response with user data and redirect URL
+ */
+export const socialAuth = async (provider, accessToken, userType = 'amateur') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/social-auth/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        provider, 
+        access_token: accessToken,
+        user_type: userType 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Social authentication failed');
+    }
+
+    const data = await response.json();
+
+    // Store the token and user info
+    if (data.token && data.user_type) {
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userRole', data.user_type);
+      localStorage.setItem('isAuthenticated', true);
+    } else {
+      throw new Error('Token or user type not found in response');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Social authentication error:', error);
+    throw error;
+  }
+};
+
+/**
+
+/**
  * Logout user and invalidate all sessions
  * @returns {Promise} Response indicating logout success
  */

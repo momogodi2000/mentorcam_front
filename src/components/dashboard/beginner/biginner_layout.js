@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sun, Moon, Globe, Users, BookOpen, Calendar, Search,
   Bell, Menu, X, BookOpenCheck, MessageSquare, Star,
-  Award, User, LogOut, Home, Briefcase, CalendarDays
+  Award, User, LogOut, Home, Briefcase, CalendarDays, MessageCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../authService';
@@ -42,6 +42,7 @@ const BeginnerLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, setIsE
     { icon: Briefcase, label: isEnglish ? 'Job Opportunities' : 'Offres d\'emploi', path: '/job_applicant' },
     { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '/sessions' },
     { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/chat' },
+    { icon: MessageCircle, label: isEnglish ? 'AI Chat' : 'Chat IA', path: '/ai_chat' }, // Added AI Chat
     { icon: Award, label: isEnglish ? 'Achievements' : 'Réalisations', path: '/achievements' },
     { icon: Star, label: isEnglish ? 'Rate' : 'Évaluer', path: '/rate' },
     { icon: User, label: isEnglish ? 'Profile' : 'Profil', path: '/profile' }
