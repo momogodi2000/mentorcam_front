@@ -47,7 +47,7 @@ const ProfessionalLayout = ({ children, isDarkMode, setIsDarkMode, isEnglish, se
         { icon: Calendar, label: isEnglish ? 'Sessions' : 'Sessions', path: '#' },
         { icon: Video, label: isEnglish ? 'Online Classes' : 'Cours en Ligne', path: '/online_classe' },
         { icon: Wallet, label: isEnglish ? 'Earnings' : 'Revenus', path: '/earning' },
-        { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours', path: '/classe' },
+       // { icon: GraduationCap, label: isEnglish ? 'Courses' : 'Cours', path: '/classe' },
         { icon: MessageSquare, label: isEnglish ? 'Messages' : 'Messages', path: '/pro_messages' },
         { icon: Settings, label: isEnglish ? 'Settings' : 'Paramètres', path: '/setting' }
     ];

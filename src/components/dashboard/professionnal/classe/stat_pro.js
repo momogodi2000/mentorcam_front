@@ -9,8 +9,8 @@ import {
     DollarSign, Award, TrendingUp, Download,
     Loader, AlertCircle, RefreshCw
 } from 'lucide-react';
-import ProfessionalLayout from './professionnal_layout';
-import ProfessionalDashboardService from '../../services/professionnal/pro_stat';
+import ProfessionalLayout from '../professionnal_layout';
+import ProfessionalDashboardService from '../../../services/professionnal/pro_stat';
 
 const ProfessionalDashboard = () => {
   // State management
@@ -34,10 +34,6 @@ const ProfessionalDashboard = () => {
   const [mentorshipsData, setMentorshipsData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // Add state for isDarkMode and isEnglish
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isEnglish, setIsEnglish] = useState(true);
   
   // Modal state for exports
   const [showExportModal, setShowExportModal] = useState(false);
@@ -484,12 +480,7 @@ const ProfessionalDashboard = () => {
   };
 
   return (
-    <ProfessionalLayout 
-      isDarkMode={isDarkMode} 
-      setIsDarkMode={setIsDarkMode} 
-      isEnglish={isEnglish} 
-      setIsEnglish={setIsEnglish}
-    >
+    <ProfessionalLayout>
       <MainContent />
       <ExportModal />
     </ProfessionalLayout>
