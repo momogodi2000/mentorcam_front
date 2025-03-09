@@ -89,6 +89,20 @@ class AmateurStatServices {
     }
 
     /**
+     * Fetch user dashboard data
+     * @returns {Promise} User dashboard data
+     */
+    async getUserDashboard() {
+        try {
+            const response = await axiosInstance.get('/dashboard/');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching user dashboard data:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Fetch overall platform statistics
      * @returns {Promise} Overall statistics data
      */
@@ -115,6 +129,7 @@ class AmateurStatServices {
                 jobs,
                 exams,
                 courses,
+                dashboard,
                 overall
             ] = await Promise.all([
                 this.getProfessionalStats(),
@@ -123,6 +138,7 @@ class AmateurStatServices {
                 this.getJobStats(),
                 this.getExamStats(),
                 this.getCourseStats(),
+                this.getUserDashboard(),
                 this.getOverallStats()
             ]);
 
@@ -133,12 +149,42 @@ class AmateurStatServices {
                 jobs,
                 exams,
                 courses,
+                dashboard,
                 overall
             };
         } catch (error) {
             console.error('Error fetching all statistics:', error);
             throw error;
         }
+    }
+
+    /**
+     * Format user dashboard data for display
+     * @param {Object} dashboardData - Raw dashboard data
+     * @returns {Object} Formatted dashboard data
+     */
+    formatDashboardData(dashboardData) {
+        const { user_info, recent_activity, upcoming_schedule, domains_of_interest, financial_overview } = dashboardData;
+        
+        // Format domains for chart display
+        const domainsChartData = this.formatDomainData(domains_of_interest);
+        
+        // Format activity data for chart display
+        const activityChartData = this.formatBarChartData(recent_activity);
+        
+        return {
+            userInfo: user_info,
+            recentActivity: {
+                raw: recent_activity,
+                chart: activityChartData
+            },
+            upcomingSchedule: upcoming_schedule,
+            domainsOfInterest: {
+                raw: domains_of_interest,
+                chart: domainsChartData
+            },
+            financialOverview: financial_overview
+        };
     }
 
     /**
