@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageCircle, Send, User, Bot, ChevronRight, Compass, Award, Map, Download, FileText, ArrowUp, Image, X, Paperclip, AlertCircle, Languages, Moon, Sun, ArrowLeft
 } from 'lucide-react';
-import { sendMessage } from '../../../services/biginner/chatService';
+import { sendMessage, fetchChatHistory, clearChatHistory, updateChatTitle } from '../../../services/biginner/chatService';
 import { getUser } from '../../../services/get_user'; // Import the getUser service
 
 const AIChat = () => {
@@ -137,6 +137,26 @@ const AIChat = () => {
     fetchCurrentUser();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      const fetchHistory = async () => {
+        try {
+          const history = await fetchChatHistory(user.id);
+          // Convert timestamp strings to Date objects
+          const formattedHistory = history.map((message) => ({
+            ...message,
+            timestamp: new Date(message.timestamp), // Ensure timestamp is a Date object
+          }));
+          setMessages(formattedHistory);
+        } catch (error) {
+          console.error('Error fetching chat history:', error);
+        }
+      };
+  
+      fetchHistory();
+    }
+  }, [user]);
+
   // Set initial welcome message based on language
   useEffect(() => {
     setMessages([
@@ -204,8 +224,6 @@ const AIChat = () => {
   
     try {
       // Send message to the backend using the named export `sendMessage`
-      // Note: In a real implementation, you'd need to update sendMessage 
-      // to handle FormData and media files
       const response = await sendMessage(user.id, input, mediaFile);
       const aiResponse = response.response;
   
