@@ -28,8 +28,8 @@ export class ChatWebSocket {
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws/chat/${this.roomId}/?token=${this.token}`;
-    
+    const wsUrl = `${protocol}//${host}/ws/chat/${this.roomId}/?token=${this.token}`; 
+      
     try {
       this.socket = new WebSocket(wsUrl);
       
