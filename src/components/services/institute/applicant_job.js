@@ -31,8 +31,8 @@ export const JobApplicantsService = {
     updateApplicationStatus: async (jobId, applicationId, status) => {
         try {
             const response = await axiosInstance.patch(`/jobs/${jobId}/update_application/`, {
-                application_id: applicationId,
-                status
+                application_id: applicationId, // Ensure this matches the backend's expected field
+                status // Ensure this matches the backend's expected field
             });
             return response.data;
         } catch (error) {

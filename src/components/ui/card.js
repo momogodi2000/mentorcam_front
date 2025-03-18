@@ -33,3 +33,9 @@ export const CardContent = ({ className = '', children, ...props }) => (
     {children}
   </div>
 );
+
+export const CardFooter = ({ className = '', children, ...props }) => (
+  <div className={`p-6 border-t border-gray-200 dark:border-gray-700 ${className}`} {...props}>
+    {children}
+  </div>
+);
